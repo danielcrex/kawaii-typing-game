@@ -1,0 +1,22 @@
+{
+  "name": "kawaii-typing-game",
+  "private": true,
+  "version": "2.0.0",
+  "type": "module",
+  "description": "Kawaii Typing Friends — adaptive touch-typing game (Vite + TypeScript rebuild).",
+  "scripts": {
+    "dev": "vite",
+    "typecheck": "tsc --noEmit",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "howler": "^2.2.4"
+  },
+  "devDependencies": {
+    "@types/howler": "^2.2.11",
+    "@types/node": "^22.10.5",
+    "typescript": "^5.6.3",
+    "vite": "^6.0.7"
+  }
+}

@@ -1,3 +1,7 @@
+# dependencies & build output
+node_modules
+dist
+
 # wrangler files
 .wrangler
 .dev.vars*

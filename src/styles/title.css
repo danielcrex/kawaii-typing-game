@@ -1,0 +1,103 @@
+/* Title screen — the mascot grid. Quiet, disciplined menus (§7.3/§7.5). */
+
+.title {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: var(--space-8) var(--space-5) var(--space-6);
+  gap: var(--space-5);
+}
+
+.title__header {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.title__logo {
+  font-family: var(--font-display);
+  font-weight: var(--fw-semibold);
+  font-size: var(--fs-display);
+  line-height: var(--lh-tight);
+  margin: 0;
+  color: var(--tile-ink);
+}
+
+.title__logo .spark {
+  color: var(--gold);
+  text-shadow: var(--glow-gold);
+}
+
+.title__tagline {
+  margin: 0;
+  color: var(--ink-muted);
+  font-size: var(--fs-body);
+}
+
+/* Responsive mascot grid — auto-fits candy chips to the laptop screen (§7.5). */
+.mascot-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(112px, 1fr));
+  gap: var(--space-4);
+  width: min(1040px, 100%);
+  padding: var(--space-2);
+}
+
+/* Each mascot is a small candy-glass chip (a preview of the signature capsule). */
+.mascot-chip {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-2) var(--space-2);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  border-radius: var(--radius-lg);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.55));
+  box-shadow: var(--shadow-md), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  transition:
+    transform var(--dur-base) var(--ease-spring),
+    box-shadow var(--dur-base) var(--ease-out);
+}
+
+.mascot-chip:hover,
+.mascot-chip:focus-visible {
+  transform: translateY(-4px) scale(1.03);
+  box-shadow: var(--shadow-lg), var(--glow-accent), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+.mascot-chip__art {
+  width: 76px;
+  height: 76px;
+  border-radius: var(--radius-md);
+  object-fit: contain;
+  background: radial-gradient(circle at 50% 35%, #fff, rgba(255, 255, 255, 0));
+}
+
+/* Fallback capsule (§8) — colored candy bubble with the mascot's initial. */
+.mascot-chip__fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-weight: var(--fw-semibold);
+  font-size: 1.75rem;
+  color: #fff;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+}
+
+.mascot-chip__level {
+  font-family: var(--font-mono);
+  font-size: var(--fs-small);
+  color: var(--ink-muted);
+}
+
+.mascot-chip__name {
+  font-family: var(--font-display);
+  font-weight: var(--fw-medium);
+  font-size: var(--fs-body);
+  color: var(--tile-ink);
+}

@@ -1,0 +1,80 @@
+/*
+ * Base layout + the dusk background. The candy world lives on a soft, animated
+ * gradient that each level hue-shifts via --mascot-hue (§7.1).
+ */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  font-family: var(--font-ui);
+  font-size: var(--fs-body);
+  line-height: var(--lh-normal);
+  color: var(--tile-ink);
+  /* Dusk gradient, rotated per mascot. filter:hue-rotate keeps the whole
+     palette coherent while shifting the mood level to level. */
+  background:
+    radial-gradient(1200px 800px at 15% -10%, var(--bg-1), transparent 60%),
+    radial-gradient(1100px 900px at 100% 0%, var(--bg-3), transparent 55%),
+    linear-gradient(160deg, var(--bg-2), var(--bg-1) 45%, var(--bg-3));
+  background-attachment: fixed;
+  filter: hue-rotate(var(--mascot-hue));
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Scenes mount here; each screen is absolutely centered within the viewport. */
+#app {
+  position: relative;
+  min-height: 100%;
+  isolation: isolate;
+}
+
+/* Particle/confetti overlay sits above scenes but never eats pointer events. */
+#fx {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 50;
+}
+
+/* Visible keyboard focus on every interactive control (quality floor, §7.5). */
+:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: var(--radius-sm);
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+}
+
+/* Instrument readouts (WPM / accuracy / score) use the mono face + tabular figures. */
+.instrument {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: var(--tracking-instrument);
+}
+
+/* Motion restraint: honor reduced-motion globally (§7.4). Scenes add specifics. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}

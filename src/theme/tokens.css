@@ -1,0 +1,65 @@
+/*
+ * Design tokens — "Soft-Luxe Kawaii" (PROJECT.md §7.1).
+ * Premium confectionery / high-end toy: soft depth, candy-glass, real light,
+ * one confident jewel accent, gold as the luxury signal. Readability is sacred.
+ *
+ * Per-mascot hue: each level sets `--mascot-hue` (deg) on :root, and the dusk
+ * background is rotated by it so every level feels distinct while the system
+ * stays coherent. Default 0 = the base blush/lilac/periwinkle dusk.
+ */
+:root {
+  /* ---- Background: soft dusk (never stark white, never harsh black) ---- */
+  --bg-1: #fbf4fa; /* blush white */
+  --bg-2: #e9e2fb; /* powder lilac */
+  --bg-3: #d9e6fb; /* soft periwinkle (edges) */
+
+  /* ---- Tile: candy glass ---- */
+  --tile-surface: #ffffff; /* used at ~85% opacity + inner glow + specular */
+  --tile-ink: #2a1a2e; /* deep plum-black, high-contrast letters */
+  --tile-fill: var(--accent); /* typed-prefix fill (liquid-in-glass) */
+
+  /* ---- Accent: jewel raspberry-orchid (not terracotta, not acid) ---- */
+  --accent: #d01e7a;
+  --accent-soft: #f7c6e1;
+
+  /* ---- Luxury signal: gold, used sparingly ---- */
+  --gold: #e9b44c;
+  --gold-hi: #f7d77c;
+
+  /* ---- State ---- */
+  --success: #34d399; /* mint — clear/celebrate */
+  --soft-warn: #ff8a93; /* soft coral — miss/heart-loss (never harsh red) */
+  --ink-muted: #6b5b72; /* secondary text */
+
+  /* ---- Per-mascot hue offset (levels override this) ---- */
+  --mascot-hue: 0deg;
+
+  /* ---- Elevation: layered, soft shadows are where "luxe" lives ---- */
+  --shadow-sm: 0 1px 2px rgba(42, 26, 46, 0.06), 0 2px 6px rgba(42, 26, 46, 0.06);
+  --shadow-md: 0 6px 14px rgba(42, 26, 46, 0.1), 0 2px 4px rgba(42, 26, 46, 0.06);
+  --shadow-lg: 0 18px 40px rgba(42, 26, 46, 0.16), 0 6px 12px rgba(42, 26, 46, 0.08);
+  --glow-accent: 0 0 24px rgba(208, 30, 122, 0.35);
+  --glow-gold: 0 0 22px rgba(233, 180, 76, 0.45);
+
+  /* ---- Radii — soft, toy-like ---- */
+  --radius-sm: 10px;
+  --radius-md: 18px;
+  --radius-lg: 28px;
+  --radius-pill: 999px;
+
+  /* ---- Spacing scale ---- */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-8: 48px;
+
+  /* ---- Motion — spring-ish easing; restraint reads as premium (§7.4) ---- */
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-out: cubic-bezier(0.22, 0.61, 0.36, 1);
+  --dur-fast: 120ms;
+  --dur-base: 220ms;
+  --dur-slow: 420ms;
+}
