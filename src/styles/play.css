@@ -45,6 +45,12 @@
   color: var(--tile-ink);
 }
 
+.play__stats {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
 .play__stat {
   font-size: var(--fs-instrument);
   color: var(--ink-muted);

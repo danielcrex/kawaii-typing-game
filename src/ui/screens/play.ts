@@ -12,6 +12,7 @@ import { getMascot, mascotFallbackColor } from '../../data/mascots';
 import { getLevel, getPhaseForLevel, type PhaseId } from '../../data/levels';
 import { createStaticDifficulty } from '../../engine/difficulty';
 import { startLoop, type LoopHandle } from '../../engine/loop';
+import { attachKeyRouter } from '../../input/keyRouter';
 import { Session, type SessionSnapshot } from '../../game/session';
 import type { Scene, SceneFactory, SceneNavigator } from '../scenes';
 import { createTitle } from './title';
@@ -33,23 +34,28 @@ export function createPlay(level: number): SceneFactory {
       <header class="play__hud">
         <button class="play__back" type="button">← Friends</button>
         <div class="play__title">Level ${level} — ${mascot?.name ?? 'Mystery'}</div>
-        <div class="play__stat instrument"><span data-cleared>0</span> / 20</div>
+        <div class="play__stats">
+          <span class="play__stat instrument" title="Accuracy">🎯 <span data-acc>100</span>%</span>
+          <span class="play__stat instrument"><span data-cleared>0</span> / 20</span>
+        </div>
       </header>
       <div class="play__field" aria-label="Falling tiles"></div>
       <footer class="play__footer instrument" data-hint>
-        step 2 preview · click a tile to clear it (real typing arrives in step 3)
+        Just start typing — the game finds the right tile. Wrong keys are okay, just try again.
       </footer>
     `;
 
     const back = root.querySelector<HTMLButtonElement>('.play__back')!;
     const field = root.querySelector<HTMLDivElement>('.play__field')!;
     const clearedOut = root.querySelector<HTMLSpanElement>('[data-cleared]')!;
+    const accOut = root.querySelector<HTMLSpanElement>('[data-acc]')!;
     const hint = root.querySelector<HTMLElement>('[data-hint]')!;
 
     back.addEventListener('click', () => nav.go(createTitle));
 
     let loop: LoopHandle | null = null;
     let session: Session | null = null;
+    let detachKeys: (() => void) | null = null;
 
     return {
       id: `play-${level}`,
@@ -70,9 +76,9 @@ export function createPlay(level: number): SceneFactory {
           nextWord: makeTempWordSource(phase.id),
           mascot: { image: mascot.image, name: mascot.name, fallbackColor: mascotFallbackColor(mascot.hue) },
           layer: field,
-          debugClickToClear: true,
           onChange: (snap: SessionSnapshot) => {
             clearedOut.textContent = String(snap.cleared);
+            accOut.textContent = String(Math.round(snap.accuracy * 100));
             if (snap.state === 'won') {
               hint.textContent = '🎉 You cleared them all! (level-complete scene comes in step 8)';
             }
@@ -80,6 +86,10 @@ export function createPlay(level: number): SceneFactory {
         });
 
         session.start();
+
+        // Real typing: route keystrokes into the session (no submit key).
+        detachKeys = attachKeyRouter((char) => session?.handleKey(char));
+
         loop = startLoop({
           update: (dt) => session?.update(dt),
           render: (alpha) => session?.render(alpha),
@@ -92,6 +102,7 @@ export function createPlay(level: number): SceneFactory {
         }
       },
       unmount() {
+        detachKeys?.();
         loop?.stop();
         session?.dispose();
         document.documentElement.style.setProperty('--mascot-hue', previousHue || '0deg');
