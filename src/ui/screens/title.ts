@@ -8,7 +8,7 @@
  */
 import { MASCOTS, mascotFallbackColor, type MascotDef } from '../../data/mascots';
 import type { Scene, SceneFactory, SceneNavigator } from '../scenes';
-import { createPlayPlaceholder } from './play';
+import { createPlay } from './play';
 
 export const createTitle: SceneFactory = (nav: SceneNavigator): Scene => {
   const root = document.createElement('section');
@@ -62,7 +62,7 @@ function createMascotChip(mascot: MascotDef, nav: SceneNavigator): HTMLElement {
   name.textContent = mascot.name;
 
   chip.append(art, level, name);
-  chip.addEventListener('click', () => nav.go(createPlayPlaceholder(mascot.level)));
+  chip.addEventListener('click', () => nav.go(createPlay(mascot.level)));
   return chip;
 }
 

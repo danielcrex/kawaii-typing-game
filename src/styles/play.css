@@ -1,0 +1,223 @@
+/*
+ * Play scene + the signature candy-capsule tile (PROJECT.md §7.3).
+ *
+ * The capsule is where we spend the boldness: soft candy-glass, inner glow, a
+ * top specular highlight, spring physics on spawn, a gentle fall-stretch, and a
+ * gold+accent pop on clear. The typed prefix fills left-to-right like liquid in
+ * glass. Menus stay quiet; the tile is the star.
+ */
+
+.play {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ---- HUD (top bar) — quiet, disciplined ---- */
+.play__hud {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-4) var(--space-5);
+}
+
+.play__back {
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.6);
+  color: var(--tile-ink);
+  font-family: var(--font-ui);
+  font-weight: var(--fw-medium);
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-pill);
+  box-shadow: var(--shadow-sm);
+  transition: transform var(--dur-fast) var(--ease-out), box-shadow var(--dur-fast) var(--ease-out);
+}
+.play__back:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+.play__title {
+  font-family: var(--font-display);
+  font-weight: var(--fw-semibold);
+  font-size: var(--fs-h2);
+  color: var(--tile-ink);
+}
+
+.play__stat {
+  font-size: var(--fs-instrument);
+  color: var(--ink-muted);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-pill);
+  background: rgba(255, 255, 255, 0.55);
+  box-shadow: var(--shadow-sm);
+}
+.play__stat [data-cleared] {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+/* ---- Field — the falling area ---- */
+.play__field {
+  position: relative;
+  flex: 1;
+  margin: 0 var(--space-4);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  /* faint inner vignette so tiles read against the dusk */
+  box-shadow: inset 0 0 60px rgba(42, 26, 46, 0.05);
+}
+
+.play__footer {
+  text-align: center;
+  color: var(--ink-muted);
+  font-size: var(--fs-small);
+  padding: var(--space-3) var(--space-5) var(--space-5);
+}
+
+/* ---- The candy-capsule tile ---- */
+
+/* Outer element carries POSITION only (JS writes translate3d here). */
+.tile {
+  position: absolute;
+  top: 0;
+  left: 0;
+  will-change: transform;
+}
+
+/* Inner capsule carries the MATERIAL + all animation. */
+.tile__capsule {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 96px;
+  padding: var(--space-3) var(--space-4) var(--space-3);
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  /* candy glass: translucent white with soft vertical light */
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0.72));
+  box-shadow:
+    var(--shadow-md),
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    inset 0 -8px 18px rgba(208, 30, 122, 0.06);
+  /* spring-in on spawn, then a gentle continuous fall-stretch */
+  animation:
+    tile-spawn var(--dur-slow) var(--ease-spring) both,
+    tile-fall-stretch 2.4s var(--ease-out) 0.42s infinite alternate;
+}
+
+/* Top specular highlight — the "real light" that sells the glass (§7). */
+.tile__capsule::before {
+  content: '';
+  position: absolute;
+  inset: 3px 8px auto 8px;
+  height: 34%;
+  border-radius: var(--radius-lg);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0));
+  pointer-events: none;
+}
+
+/* Liquid fill of the typed prefix — sits behind the letters, above the glass. */
+.tile__fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 0;
+  background: linear-gradient(180deg, var(--accent-soft), var(--tile-fill));
+  opacity: 0.85;
+  transition: width var(--dur-fast) var(--ease-out);
+  pointer-events: none;
+}
+
+.tile__mascot {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  object-fit: contain;
+  border-radius: var(--radius-md);
+}
+.tile__mascot--fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-weight: var(--fw-semibold);
+  color: #fff;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+}
+
+.tile__word {
+  position: relative;
+  font-family: var(--font-display);
+  font-weight: var(--fw-semibold);
+  font-size: var(--fs-tile);
+  line-height: var(--lh-tight);
+  color: var(--tile-ink);
+  letter-spacing: 0.01em;
+  /* keep letters razor-sharp above the fill (readability = pedagogy) */
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+
+/* Spring squash-in on spawn. */
+@keyframes tile-spawn {
+  0% { transform: scale(0.6, 1.25); opacity: 0; }
+  60% { transform: scale(1.06, 0.94); opacity: 1; }
+  100% { transform: scale(1, 1); }
+}
+
+/* Gentle vertical stretch while falling — reads as soft momentum. */
+@keyframes tile-fall-stretch {
+  from { transform: scaleY(1); }
+  to { transform: scaleY(1.035); }
+}
+
+/* Pop-and-celebrate on clear (confetti burst is added in step 7). */
+.tile__capsule--clear {
+  animation: tile-clear 260ms var(--ease-spring) forwards;
+}
+@keyframes tile-clear {
+  0% { transform: scale(1); }
+  35% { transform: scale(1.18); box-shadow: var(--shadow-lg), var(--glow-gold); }
+  100% { transform: scale(0.2); opacity: 0; }
+}
+
+/* Sad, soft escape when a tile reaches the bottom (heart loss added in step 4). */
+.tile__capsule--escape {
+  animation: tile-escape 260ms var(--ease-out) forwards;
+}
+@keyframes tile-escape {
+  0% { transform: translateY(0) scale(1); opacity: 1; }
+  100% { transform: translateY(14px) scale(0.86); opacity: 0; filter: saturate(0.4); }
+}
+
+/* Forgiving wrong-key nudge — never fails the tile (§5.2), just a tiny shake. */
+.tile__capsule--shake {
+  animation: tile-shake 240ms var(--ease-out);
+}
+@keyframes tile-shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-4px); }
+  75% { transform: translateX(4px); }
+}
+
+/* Motion restraint (§7.4): swap springs for quick fades, no ambient stretch. */
+@media (prefers-reduced-motion: reduce) {
+  .tile__capsule {
+    animation: tile-spawn-reduced var(--dur-base) var(--ease-out) both;
+  }
+  @keyframes tile-spawn-reduced {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  .tile__capsule--clear,
+  .tile__capsule--escape {
+    animation: none;
+    opacity: 0;
+    transition: opacity var(--dur-base) var(--ease-out);
+  }
+}

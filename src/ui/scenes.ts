@@ -13,6 +13,10 @@
 export interface Scene {
   readonly id: string;
   readonly root: HTMLElement;
+  /** Called right AFTER the root is inserted into the DOM, so geometry is
+   *  measurable synchronously (no rAF needed — works even if the page starts
+   *  hidden). Do layout-dependent setup (field sizing, session start) here. */
+  mounted?(): void;
   /** Called right before the scene is removed; detach listeners/timers here. */
   unmount?(): void;
 }
@@ -40,5 +44,7 @@ export class SceneManager implements SceneNavigator {
     this.current?.root.remove();
     this.host.appendChild(next.root);
     this.current = next;
+    // Insertion is done — now geometry is measurable for the new scene.
+    next.mounted?.();
   }
 }
