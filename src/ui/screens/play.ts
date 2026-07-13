@@ -14,8 +14,11 @@ import { createStaticDifficulty } from '../../engine/difficulty';
 import { startLoop, type LoopHandle } from '../../engine/loop';
 import { attachKeyRouter } from '../../input/keyRouter';
 import { Session, type SessionSnapshot } from '../../game/session';
+import { createHeartsView } from '../../render/hud';
+import { initHearts, accrueRegen, loseHeart, regenFraction } from '../../game/hearts';
 import type { Scene, SceneFactory, SceneNavigator } from '../scenes';
 import { createTitle } from './title';
+import { createGameOver } from './gameOver';
 
 /** Play a given level. */
 export function createPlay(level: number): SceneFactory {
@@ -35,6 +38,7 @@ export function createPlay(level: number): SceneFactory {
         <button class="play__back" type="button">← Friends</button>
         <div class="play__title">Level ${level} — ${mascot?.name ?? 'Mystery'}</div>
         <div class="play__stats">
+          <span class="play__hearts" data-hearts></span>
           <span class="play__stat instrument" title="Accuracy">🎯 <span data-acc>100</span>%</span>
           <span class="play__stat instrument"><span data-cleared>0</span> / 20</span>
         </div>
@@ -49,13 +53,18 @@ export function createPlay(level: number): SceneFactory {
     const field = root.querySelector<HTMLDivElement>('.play__field')!;
     const clearedOut = root.querySelector<HTMLSpanElement>('[data-cleared]')!;
     const accOut = root.querySelector<HTMLSpanElement>('[data-acc]')!;
+    const heartsMount = root.querySelector<HTMLSpanElement>('[data-hearts]')!;
     const hint = root.querySelector<HTMLElement>('[data-hint]')!;
 
     back.addEventListener('click', () => nav.go(createTitle));
 
+    const heartsView = createHeartsView();
+    heartsMount.appendChild(heartsView.el);
+
     let loop: LoopHandle | null = null;
     let session: Session | null = null;
     let detachKeys: (() => void) | null = null;
+    let ended = false; // guard so we transition off the play scene only once
 
     return {
       id: `play-${level}`,
@@ -79,7 +88,14 @@ export function createPlay(level: number): SceneFactory {
           onChange: (snap: SessionSnapshot) => {
             clearedOut.textContent = String(snap.cleared);
             accOut.textContent = String(Math.round(snap.accuracy * 100));
-            if (snap.state === 'won') {
+            heartsView.update(snap.hearts, snap.regen);
+            if (snap.state === 'over' && !ended) {
+              ended = true;
+              // Defer off the current update() call to avoid tearing the scene
+              // down re-entrantly while the loop is mid-tick.
+              queueMicrotask(() => nav.go(createGameOver(level)));
+            } else if (snap.state === 'won' && !ended) {
+              ended = true;
               hint.textContent = '🎉 You cleared them all! (level-complete scene comes in step 8)';
             }
           },
@@ -95,10 +111,20 @@ export function createPlay(level: number): SceneFactory {
           render: (alpha) => session?.render(alpha),
         });
 
-        // DEV-only: expose the session so the simulation can be stepped/inspected
-        // without relying on rAF (which pauses when the page is hidden).
+        // DEV-only: expose the session + headless constructors so the simulation
+        // can be stepped/inspected without relying on rAF (which pauses when the
+        // page is hidden). Stripped from production builds.
         if (import.meta.env.DEV) {
-          (window as unknown as { __ktf?: unknown }).__ktf = { session, loop };
+          (window as unknown as { __ktf?: unknown }).__ktf = {
+            session,
+            loop,
+            _test: {
+              Session,
+              createStaticDifficulty,
+              getPhaseForLevel,
+              hearts: { initHearts, accrueRegen, loseHeart, regenFraction },
+            },
+          };
         }
       },
       unmount() {

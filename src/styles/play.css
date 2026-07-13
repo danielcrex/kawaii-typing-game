@@ -51,6 +51,36 @@
   gap: var(--space-3);
 }
 
+/* ---- Hearts (§5.3): gold outline, gold fill revealed bottom-up ---- */
+.hearts {
+  display: inline-flex;
+  gap: 3px;
+  align-items: center;
+}
+.heart {
+  position: relative;
+  display: inline-block;
+  width: 1.35rem;
+  height: 1.35rem;
+  font-size: 1.35rem;
+  line-height: 1;
+}
+.heart__base,
+.heart__fill {
+  position: absolute;
+  inset: 0;
+  display: block;
+}
+.heart__base {
+  color: rgba(233, 180, 76, 0.28); /* muted gold outline of an empty heart */
+}
+.heart__fill {
+  color: var(--gold);
+  text-shadow: var(--glow-gold);
+  clip-path: inset(0 0 0 0); /* JS sets the top inset for the regen sliver */
+  transition: clip-path var(--dur-base) var(--ease-out);
+}
+
 .play__stat {
   font-size: var(--fs-instrument);
   color: var(--ink-muted);

@@ -1,0 +1,97 @@
+/*
+ * End cards — game over (and, later, level complete). Kind and calm (§7.5):
+ * a soft candy-glass card, the friendly mascot, and a bright, non-defeating
+ * call to try again.
+ */
+.endcard {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-6);
+}
+
+.endcard__card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  max-width: 420px;
+  padding: var(--space-8) var(--space-6);
+  text-align: center;
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  border-radius: var(--radius-lg);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0.7));
+  box-shadow: var(--shadow-lg), inset 0 1px 0 rgba(255, 255, 255, 0.95);
+}
+
+.endcard__mascot {
+  width: 128px;
+  height: 128px;
+  object-fit: contain;
+  border-radius: var(--radius-md);
+  animation: endcard-bob 3s var(--ease-out) infinite alternate;
+}
+.endcard__mascot--fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-weight: var(--fw-semibold);
+  font-size: 3rem;
+  color: #fff;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+}
+
+.endcard__title {
+  font-family: var(--font-display);
+  font-weight: var(--fw-semibold);
+  font-size: var(--fs-h1);
+  color: var(--tile-ink);
+  margin: 0;
+}
+
+.endcard__msg {
+  margin: 0;
+  color: var(--ink-muted);
+}
+
+.endcard__actions {
+  display: flex;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.endcard__btn {
+  font-family: var(--font-ui);
+  font-weight: var(--fw-semibold);
+  font-size: var(--fs-body);
+  padding: var(--space-3) var(--space-5);
+  border-radius: var(--radius-pill);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  background: rgba(255, 255, 255, 0.7);
+  color: var(--tile-ink);
+  box-shadow: var(--shadow-sm);
+  transition: transform var(--dur-fast) var(--ease-spring), box-shadow var(--dur-fast) var(--ease-out);
+}
+.endcard__btn:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+.endcard__btn--primary {
+  background: linear-gradient(180deg, var(--accent-soft), var(--accent));
+  color: #fff;
+  border-color: transparent;
+  box-shadow: var(--shadow-md), var(--glow-accent);
+}
+
+@keyframes endcard-bob {
+  from { transform: translateY(0); }
+  to { transform: translateY(-8px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .endcard__mascot { animation: none; }
+}

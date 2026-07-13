@@ -18,6 +18,7 @@ import { Spawner } from '../engine/spawner';
 import type { DifficultySource } from '../engine/difficulty';
 import { Matcher, type MatchTarget } from '../input/matcher';
 import { initScore, accuracyOf, type ScoreState } from './scoring';
+import { initHearts, accrueRegen, loseHeart, regenFraction, type HeartsState } from './hearts';
 import { createTile, type TileView } from '../render/tiles';
 import { TILE_TARGET } from '../data/levels';
 
@@ -58,7 +59,14 @@ export interface SessionSnapshot {
   live: number;
   /** Rolling accuracy 0..1 = correct game keystrokes / total game keystrokes. */
   accuracy: number;
+  /** Consecutive clears (combo counter). Resets on escape, not on mistype. */
   streak: number;
+  /** Current hearts (0..3). */
+  hearts: number;
+  /** Regen sliver 0..1 on the next empty heart. */
+  regen: number;
+  /** Total tiles spawned so far (used to prove nothing spawns after game-over). */
+  spawned: number;
 }
 
 /** Internal per-tile simulation state. */
@@ -87,6 +95,7 @@ export class Session {
   private readonly matcher = new Matcher();
   private readonly tiles: TileModel[] = [];
   private score: ScoreState = initScore();
+  private hearts: HeartsState = initHearts();
   private cleared = 0;
   private spawnedTotal = 0;
   private nextId = 1;
@@ -99,6 +108,7 @@ export class Session {
   start(): void {
     this.state = 'playing';
     this.score = initScore();
+    this.hearts = initHearts();
     this.matcher.reset();
     this.spawner.reset();
     this.spawnTile();
@@ -168,6 +178,9 @@ export class Session {
 
     // Fall integration + escape detection.
     for (const tile of this.tiles) {
+      // If an escape just ended the game (hearts hit 0), stop integrating this
+      // tick immediately — no further falls, no further escapes (§5.3).
+      if (this.state !== 'playing') break;
       if (tile.removing) continue;
       tile.prevY = tile.y;
       tile.y += fallSpeed * dt;
@@ -252,10 +265,14 @@ export class Session {
     tile.removing = true;
     this.matcher.release(id); // free the lock so the next key can auto-target
     this.cleared++;
+    // Clean-play bookkeeping: advance the combo streak AND the regen counter.
+    // These are separate counters; both advance on a clear, both reset on an
+    // escape, and NEITHER is touched by a mistype (§5.3).
     this.score.streak++;
     if (this.score.streak > this.score.bestStreak) this.score.bestStreak = this.score.streak;
+    this.hearts = accrueRegen(this.hearts);
 
-    // TODO(step 4/5): feed metrics to difficulty.onTileResolved(...) once margin
+    // TODO(step 5): feed metrics to difficulty.onTileResolved(...) once margin
     // + WPM tracking exist. Static source ignores it for now.
 
     void tile.view.clear().then(() => this.finalizeRemoval(tile));
@@ -266,13 +283,22 @@ export class Session {
     this.emit();
   }
 
-  /** A tile reached the bottom. Step 4 turns this into a heart loss. */
+  /**
+   * A tile reached the bottom — the authoritative fail path (§5.3).
+   * Lose a heart and reset BOTH clean-play counters (streak + regen). If that
+   * drops hearts to 0, flip to 'over' in THIS SAME tick: the update() guard
+   * (and the fall-loop break above) then freeze all spawn/fall integration, and
+   * the play scene transitions to the game-over screen. Nothing spawns after.
+   */
   private escapeTile(tile: TileModel): void {
     tile.removing = true;
     this.matcher.release(tile.id);
     this.score.streak = 0; // an escape breaks the clean-play streak
+    this.hearts = loseHeart(this.hearts); // −1 heart, regen progress reset
+    if (this.hearts.dead) {
+      this.state = 'over'; // terminal — same tick hearts hit 0
+    }
     void tile.view.escape().then(() => this.finalizeRemoval(tile));
-    // TODO(step 4): hearts -= 1 here, with the authoritative game-over check.
     this.emit();
   }
 
@@ -284,15 +310,23 @@ export class Session {
     this.emit();
   }
 
-  /** Push a snapshot to the HUD listener. */
-  private emit(): void {
-    this.opts.onChange?.({
+  /** Current progress snapshot (public so the HUD and tests can read it). */
+  snapshot(): SessionSnapshot {
+    return {
       state: this.state,
       cleared: this.cleared,
       target: TILE_TARGET,
       live: this.liveCount(),
       accuracy: accuracyOf(this.score),
       streak: this.score.streak,
-    });
+      hearts: this.hearts.hearts,
+      regen: regenFraction(this.hearts),
+      spawned: this.spawnedTotal,
+    };
+  }
+
+  /** Push a snapshot to the HUD listener. */
+  private emit(): void {
+    this.opts.onChange?.(this.snapshot());
   }
 }
