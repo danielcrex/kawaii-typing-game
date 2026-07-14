@@ -106,10 +106,38 @@
 }
 
 .play__footer {
-  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
   color: var(--ink-muted);
   font-size: var(--fs-small);
   padding: var(--space-3) var(--space-5) var(--space-5);
+}
+
+/* Adaptive-intensity readout — a quiet meter so the self-tuning is legible. */
+.play__intensity {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  white-space: nowrap;
+  color: var(--ink-muted);
+}
+.play__intensity-bar {
+  display: inline-block;
+  width: 90px;
+  height: 8px;
+  border-radius: var(--radius-pill);
+  background: rgba(42, 26, 46, 0.1);
+  overflow: hidden;
+}
+.play__intensity-fill {
+  display: block;
+  height: 100%;
+  width: 20%;
+  border-radius: var(--radius-pill);
+  background: linear-gradient(90deg, var(--accent-soft), var(--accent));
+  transition: width var(--dur-slow) var(--ease-out);
 }
 
 /* ---- The candy-capsule tile ---- */

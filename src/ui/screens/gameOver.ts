@@ -58,7 +58,9 @@ export function createGameOver(level: number): SceneFactory {
     retry.className = 'endcard__btn endcard__btn--primary';
     retry.type = 'button';
     retry.textContent = 'Try again?';
-    retry.addEventListener('click', () => nav.go(createPlay(level)));
+    // Retry resumes at REDUCED intensity (createPlay reads the persisted phase
+    // intensity and applies the retry factor) — never the wall that just killed her.
+    retry.addEventListener('click', () => nav.go(createPlay(level, { retry: true })));
 
     const home = document.createElement('button');
     home.className = 'endcard__btn';

@@ -59,12 +59,16 @@ export interface SessionSnapshot {
   live: number;
   /** Rolling accuracy 0..1 = correct game keystrokes / total game keystrokes. */
   accuracy: number;
+  /** Words per minute (readout). */
+  wpm: number;
   /** Consecutive clears (combo counter). Resets on escape, not on mistype. */
   streak: number;
   /** Current hearts (0..3). */
   hearts: number;
   /** Regen sliver 0..1 on the next empty heart. */
   regen: number;
+  /** Current adaptive intensity 0..1 (from the difficulty source). */
+  intensity: number;
   /** Total tiles spawned so far (used to prove nothing spawns after game-over). */
   spawned: number;
 }
@@ -99,6 +103,8 @@ export class Session {
   private cleared = 0;
   private spawnedTotal = 0;
   private nextId = 1;
+  /** Wall-clock at level start, for the WPM readout. */
+  private startTime = 0;
 
   constructor(opts: SessionOptions) {
     this.opts = opts;
@@ -109,6 +115,7 @@ export class Session {
     this.state = 'playing';
     this.score = initScore();
     this.hearts = initHearts();
+    this.startTime = performance.now();
     this.matcher.reset();
     this.spawner.reset();
     this.spawnTile();
@@ -214,6 +221,20 @@ export class Session {
     return n;
   }
 
+  /** Spare fraction of field height when a tile resolves (1=top … 0=bottom). */
+  private marginOf(tile: TileModel): number {
+    const bottom = tile.y + tile.height;
+    const h = this.opts.field.height;
+    return Math.min(1, Math.max(0, (h - bottom) / h));
+  }
+
+  /** Standard WPM: characters (correct keystrokes) / 5 / minutes. Readout only. */
+  private currentWpm(): number {
+    const minutes = (performance.now() - this.startTime) / 60000;
+    if (minutes <= 0) return 0;
+    return this.score.correctKeys / 5 / minutes;
+  }
+
   /** Build the DOM-free snapshot the matcher reasons over (live tiles only). */
   private matchSnapshot(): MatchTarget[] {
     const height = this.opts.field.height;
@@ -272,8 +293,15 @@ export class Session {
     if (this.score.streak > this.score.bestStreak) this.score.bestStreak = this.score.streak;
     this.hearts = accrueRegen(this.hearts);
 
-    // TODO(step 5): feed metrics to difficulty.onTileResolved(...) once margin
-    // + WPM tracking exist. Static source ignores it for now.
+    // Feed the adaptive controller: a clear with lots of spare height (high
+    // margin) says "she has room — you can push"; a last-second clear says the
+    // opposite. The rolling window smooths it (§5.1).
+    this.opts.difficulty.onTileResolved({
+      outcome: 'cleared',
+      margin: this.marginOf(tile),
+      accuracy: accuracyOf(this.score),
+      wpm: this.currentWpm(),
+    });
 
     void tile.view.clear().then(() => this.finalizeRemoval(tile));
 
@@ -295,6 +323,17 @@ export class Session {
     this.matcher.release(tile.id);
     this.score.streak = 0; // an escape breaks the clean-play streak
     this.hearts = loseHeart(this.hearts); // −1 heart, regen progress reset
+
+    // Feed the controller a STRONG ease-off (margin ~0 + the escape penalty),
+    // so a struggling player is relieved fast (§5.1 / decision 1). Do this even
+    // on the fatal escape so the persisted intensity reflects the difficulty.
+    this.opts.difficulty.onTileResolved({
+      outcome: 'escaped',
+      margin: this.marginOf(tile),
+      accuracy: accuracyOf(this.score),
+      wpm: this.currentWpm(),
+    });
+
     if (this.hearts.dead) {
       this.state = 'over'; // terminal — same tick hearts hit 0
     }
@@ -318,9 +357,11 @@ export class Session {
       target: TILE_TARGET,
       live: this.liveCount(),
       accuracy: accuracyOf(this.score),
+      wpm: this.currentWpm(),
       streak: this.score.streak,
       hearts: this.hearts.hearts,
       regen: regenFraction(this.hearts),
+      intensity: this.opts.difficulty.intensity,
       spawned: this.spawnedTotal,
     };
   }

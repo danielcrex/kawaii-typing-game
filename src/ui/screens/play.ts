@@ -10,7 +10,13 @@
 import '../../styles/play.css';
 import { getMascot, mascotFallbackColor } from '../../data/mascots';
 import { getLevel, getPhaseForLevel, type PhaseId } from '../../data/levels';
-import { createStaticDifficulty } from '../../engine/difficulty';
+import {
+  createAdaptiveDifficulty,
+  createStaticDifficulty,
+  COLD_START_INTENSITY,
+  RETRY_FACTOR,
+} from '../../engine/difficulty';
+import { loadPhaseIntensity, savePhaseIntensity } from '../../storage/progress';
 import { startLoop, type LoopHandle } from '../../engine/loop';
 import { attachKeyRouter } from '../../input/keyRouter';
 import { Session, type SessionSnapshot } from '../../game/session';
@@ -20,8 +26,14 @@ import type { Scene, SceneFactory, SceneNavigator } from '../scenes';
 import { createTitle } from './title';
 import { createGameOver } from './gameOver';
 
+/** Options for launching the play scene. */
+export interface PlayOptions {
+  /** True when reached via game-over "Try again?" — resumes at reduced intensity. */
+  retry?: boolean;
+}
+
 /** Play a given level. */
-export function createPlay(level: number): SceneFactory {
+export function createPlay(level: number, options: PlayOptions = {}): SceneFactory {
   return (nav: SceneNavigator): Scene => {
     const mascot = getMascot(level);
     const def = getLevel(level);
@@ -39,13 +51,17 @@ export function createPlay(level: number): SceneFactory {
         <div class="play__title">Level ${level} — ${mascot?.name ?? 'Mystery'}</div>
         <div class="play__stats">
           <span class="play__hearts" data-hearts></span>
+          <span class="play__stat instrument" title="Words per minute"><span data-wpm>0</span> wpm</span>
           <span class="play__stat instrument" title="Accuracy">🎯 <span data-acc>100</span>%</span>
           <span class="play__stat instrument"><span data-cleared>0</span> / 20</span>
         </div>
       </header>
       <div class="play__field" aria-label="Falling tiles"></div>
-      <footer class="play__footer instrument" data-hint>
-        Just start typing — the game finds the right tile. Wrong keys are okay, just try again.
+      <footer class="play__footer">
+        <span class="instrument" data-hint>Just start typing — the game finds the right tile. Wrong keys are okay, just try again.</span>
+        <span class="play__intensity instrument" title="Adaptive intensity — eases off when you struggle, ramps when you cruise">
+          intensity <span class="play__intensity-bar"><span class="play__intensity-fill" data-intensity></span></span>
+        </span>
       </footer>
     `;
 
@@ -53,6 +69,8 @@ export function createPlay(level: number): SceneFactory {
     const field = root.querySelector<HTMLDivElement>('.play__field')!;
     const clearedOut = root.querySelector<HTMLSpanElement>('[data-cleared]')!;
     const accOut = root.querySelector<HTMLSpanElement>('[data-acc]')!;
+    const wpmOut = root.querySelector<HTMLSpanElement>('[data-wpm]')!;
+    const intensityFill = root.querySelector<HTMLSpanElement>('[data-intensity]')!;
     const heartsMount = root.querySelector<HTMLSpanElement>('[data-hearts]')!;
     const hint = root.querySelector<HTMLElement>('[data-hint]')!;
 
@@ -66,6 +84,17 @@ export function createPlay(level: number): SceneFactory {
     let detachKeys: (() => void) | null = null;
     let ended = false; // guard so we transition off the play scene only once
 
+    // Starting intensity (§5.1 decisions 2 & 3):
+    //  - Resume the phase's settled intensity if we have one; otherwise COLD start
+    //    conservatively (a fresh/harder phase never inherits a high I).
+    //  - On a game-over retry, resume REDUCED — never the intensity that just
+    //    walled her.
+    const storedIntensity = phase ? loadPhaseIntensity(phase.id) : undefined;
+    const baseIntensity = storedIntensity ?? COLD_START_INTENSITY;
+    const startIntensity = options.retry ? baseIntensity * RETRY_FACTOR : baseIntensity;
+    // Created in mounted(); kept here so unmount() can persist the settled value.
+    let difficulty: ReturnType<typeof createAdaptiveDifficulty> | null = null;
+
     return {
       id: `play-${level}`,
       root,
@@ -77,17 +106,22 @@ export function createPlay(level: number): SceneFactory {
         }
         const rect = field.getBoundingClientRect();
 
+        // SINGLE SOURCE of speed/spawn/concurrency — swapping static→adaptive is
+        // this one line (everything downstream already reads through it).
+        difficulty = createAdaptiveDifficulty(phase, startIntensity);
+
         session = new Session({
           level,
           field: { width: rect.width, height: rect.height },
-          // SINGLE SOURCE of speed/spawn/concurrency (static now, adaptive in step 5).
-          difficulty: createStaticDifficulty(phase),
+          difficulty,
           nextWord: makeTempWordSource(phase.id),
           mascot: { image: mascot.image, name: mascot.name, fallbackColor: mascotFallbackColor(mascot.hue) },
           layer: field,
           onChange: (snap: SessionSnapshot) => {
             clearedOut.textContent = String(snap.cleared);
             accOut.textContent = String(Math.round(snap.accuracy * 100));
+            wpmOut.textContent = String(Math.round(snap.wpm));
+            intensityFill.style.width = `${Math.round(snap.intensity * 100)}%`;
             heartsView.update(snap.hearts, snap.regen);
             if (snap.state === 'over' && !ended) {
               ended = true;
@@ -121,8 +155,10 @@ export function createPlay(level: number): SceneFactory {
             _test: {
               Session,
               createStaticDifficulty,
+              createAdaptiveDifficulty,
               getPhaseForLevel,
               hearts: { initHearts, accrueRegen, loseHeart, regenFraction },
+              storage: { loadPhaseIntensity, savePhaseIntensity },
             },
           };
         }
@@ -131,6 +167,10 @@ export function createPlay(level: number): SceneFactory {
         detachKeys?.();
         loop?.stop();
         session?.dispose();
+        // Persist the settled intensity for THIS phase so the next level/session
+        // resumes near where she left off (§5.1). On a game-over unmount this
+        // saves the (already-eased) value, and retry reduces it further.
+        if (phase && difficulty) savePhaseIntensity(phase.id, difficulty.intensity);
         document.documentElement.style.setProperty('--mascot-hue', previousHue || '0deg');
       },
     };
