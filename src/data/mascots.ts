@@ -32,10 +32,18 @@ const NAMES = [
   'Elephant', 'Human', 'Dragon', 'Robot', // Phase F (21–24)
 ] as const;
 
+/**
+ * Display mode (fix #2). `true` shows the background-removed, uniformly-framed
+ * full-image cutouts (public/Images/cut/N.png, produced by scripts/mascot_cutout.py).
+ * Flip to `false` for a ONE-STEP REVERT to the circular medallion — the medallion
+ * CSS + the source JPGs are kept intact until the cutouts are confirmed live.
+ */
+export const USE_CUTOUTS = true;
+
 export const MASCOTS: readonly MascotDef[] = NAMES.map((name, i) => ({
   level: i + 1,
   name,
-  image: `/Images/${i + 1}.jpg`,
+  image: USE_CUTOUTS ? `/Images/cut/${i + 1}.png` : `/Images/${i + 1}.jpg`,
   hue: (i * 15) % 360,
 }));
 

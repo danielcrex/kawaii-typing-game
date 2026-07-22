@@ -10,12 +10,17 @@ import './theme/tokens.css';
 import './theme/type.css';
 import './styles/base.css';
 import './styles/title.css';
+import './styles/cutout.css';
 
 import { SceneManager } from './ui/scenes';
 import { createTitle } from './ui/screens/title';
 import { createOnboarding } from './ui/screens/onboarding';
 import { createMobileGate, needsKeyboardGate } from './ui/screens/mobileGate';
+import { USE_CUTOUTS } from './data/mascots';
 import { loadOnboarding } from './storage/progress';
+
+// Mascot display mode (fix #2): full-image cutouts vs the circular medallion.
+document.documentElement.classList.toggle('cutouts', USE_CUTOUTS);
 
 const app = document.getElementById('app');
 if (!app) {

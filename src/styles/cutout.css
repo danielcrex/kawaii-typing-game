@@ -1,0 +1,24 @@
+/*
+ * Full-image cutout display (fix #2), active only under <html class="cutouts">.
+ *
+ * Overrides the circular medallion with a uniform "contain" box (the cutout PNGs
+ * are already normalized to a common square with consistent padding by
+ * scripts/mascot_cutout.py, so contain keeps every mascot the same size). The
+ * medallion rules themselves are left untouched — flipping USE_CUTOUTS reverts in
+ * one step. Fallback capsules (colored initial on a missing image) are excluded
+ * so they keep their medallion look.
+ */
+.cutouts .tile__mascot:not(.tile__mascot--fallback),
+.cutouts .mascot-chip__art:not(.mascot-chip__fallback),
+.cutouts .endcard__mascot:not(.endcard__mascot--fallback) {
+  border-radius: 0;
+  object-fit: contain;
+  background: none;
+  box-shadow: none;
+}
+
+/* A touch more room in the tile now that the art isn't cropped into a circle. */
+.cutouts .tile__mascot:not(.tile__mascot--fallback) {
+  width: 52px;
+  height: 52px;
+}
