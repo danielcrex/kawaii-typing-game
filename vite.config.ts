@@ -1,35 +1,16 @@
-import { defineConfig, type Plugin } from 'vite';
+import { defineConfig } from 'vite';
 import { fileURLToPath } from 'node:url';
-import { existsSync, renameSync } from 'node:fs';
 
 // ESM has no __dirname; derive the project root from this file's URL.
 const projectRoot = fileURLToPath(new URL('.', import.meta.url));
 const fromRoot = (p: string) => fileURLToPath(new URL(p, import.meta.url));
 
-/**
- * MIGRATION SHIM — remove after the Cloudflare cutover.
- *
- * The *old* single-file game keeps the repo-root `index.html` so the live site
- * (served by Cloudflare from `assets.directory: "."`) stays up while we rebuild.
- * Our Vite entry is therefore `game.html`, and Rollup emits `dist/game.html`.
- * But once we flip `assets.directory` to `./dist`, Cloudflare serves the site
- * root from `dist/index.html` — so we rename the built entry accordingly.
- *
- * Post-cutover this whole plugin (and the `game.html` name) collapses back to a
- * plain root `index.html`.
- */
-function renameEntryToIndex(): Plugin {
-  return {
-    name: 'rename-entry-to-index',
-    // Runs after the bundle is fully written to disk.
-    closeBundle() {
-      const from = fromRoot('dist/game.html');
-      const to = fromRoot('dist/index.html');
-      if (existsSync(from)) renameSync(from, to);
-    },
-  };
-}
-
+// Post-cutover: `index.html` is the real Vite entry, so Rollup emits
+// `dist/index.html` natively — no rename shim. Cloudflare builds `dist/` on its
+// side and serves the site root from `dist/index.html` (wrangler
+// `assets.directory: "./dist"`). The old single-file game is preserved as
+// `legacy-game.html` (repo root, NOT built into dist/) as a rollback until it's
+// deleted in the final cleanup commit.
 export default defineConfig({
   root: projectRoot,
   // Everything under public/ is copied verbatim to dist/ (keeps /Images/N.jpg paths stable).
@@ -37,10 +18,7 @@ export default defineConfig({
   build: {
     outDir: fromRoot('dist'),
     emptyOutDir: true,
-    // Entry is game.html (not index.html) so we don't clobber the live old game.
-    rollupOptions: { input: fromRoot('game.html') },
+    rollupOptions: { input: fromRoot('index.html') },
   },
-  plugins: [renameEntryToIndex()],
-  // Local dev opens the real entry, not the preserved old game.
-  server: { open: '/game.html' },
+  server: { open: '/' },
 });

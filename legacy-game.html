@@ -1,0 +1,1059 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kawaii Typing Friends</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap');
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Nunito', sans-serif;
+    background: #fff9fe;
+    overflow: hidden;
+    user-select: none;
+    height: 100vh;
+    width: 100vw;
+  }
+
+  /* ─── SCREENS ─── */
+  .screen { display: none; position: absolute; inset: 0; }
+  .screen.active { display: flex; }
+
+  /* ─── TITLE SCREEN ─── */
+  #title-screen {
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(160deg, #fff0fb 0%, #f0f8ff 100%);
+  }
+  #title-screen h1 {
+    font-size: 3.2rem;
+    font-weight: 900;
+    color: #ff69b4;
+    text-shadow: 3px 3px 0 #ffb6d9;
+    margin-bottom: .3rem;
+  }
+  #title-screen .subtitle {
+    font-size: 1.1rem;
+    color: #b97fc9;
+    margin-bottom: 2.5rem;
+  }
+  .mascot-grid {
+    display: grid;
+    grid-template-columns: repeat(8, 60px);
+    gap: 10px;
+    margin-bottom: 2.5rem;
+  }
+  .mascot-grid .mini {
+    width: 60px; height: 60px;
+    background: #fff;
+    border-radius: 14px;
+    border: 2px solid #ffd6ec;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 2rem;
+    box-shadow: 0 2px 8px #ffd6ec88;
+    cursor: pointer;
+    transition: transform .15s;
+  }
+  .mascot-grid .mini:hover { transform: scale(1.15); }
+  .mascot-grid .mini.locked { opacity: .35; cursor: default; }
+  #start-btn {
+    background: linear-gradient(135deg, #ff69b4, #ff9de2);
+    color: #fff;
+    border: none;
+    border-radius: 50px;
+    padding: 16px 56px;
+    font-size: 1.4rem;
+    font-family: 'Nunito', sans-serif;
+    font-weight: 800;
+    cursor: pointer;
+    box-shadow: 0 4px 18px #ff69b455;
+    transition: transform .15s, box-shadow .15s;
+  }
+  #start-btn:hover { transform: translateY(-2px); box-shadow: 0 7px 22px #ff69b466; }
+
+  /* ─── LEVEL SELECT ─── */
+  #level-screen {
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(160deg, #fff0fb 0%, #f0f8ff 100%);
+    gap: 20px;
+    overflow-y: auto;
+  }
+  #level-screen h2 { font-size: 2rem; color: #ff69b4; font-weight: 900; }
+  .level-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 110px);
+    gap: 14px;
+  }
+  .level-card {
+    background: #fff;
+    border-radius: 18px;
+    border: 2px solid #ffd6ec;
+    padding: 12px 8px;
+    text-align: center;
+    cursor: pointer;
+    box-shadow: 0 2px 10px #ffd6ec66;
+    transition: transform .15s;
+  }
+  .level-card:hover:not(.locked) { transform: scale(1.07); }
+  .level-card.locked { opacity: .4; cursor: default; }
+  .level-card .lc-emoji { font-size: 2rem; }
+  .level-card .lc-name { font-size: .7rem; font-weight: 700; color: #b97fc9; margin-top: 3px; }
+  .level-card .lc-num { font-size: .65rem; color: #ccc; }
+  .level-card .lc-stars { font-size: .85rem; }
+  #back-btn {
+    background: #ffe4f4; color: #d966a6; border: none; border-radius: 50px;
+    padding: 10px 32px; font-size: 1rem; font-family: 'Nunito', sans-serif;
+    font-weight: 700; cursor: pointer;
+  }
+
+  /* ─── INTRO SCREEN ─── */
+  #intro-screen {
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(160deg, #fff0fb 0%, #f0f8ff 100%);
+    gap: 22px;
+  }
+  #intro-mascot { font-size: 8rem; animation: bounce 1s infinite alternate; }
+  @keyframes bounce { from { transform: translateY(0); } to { transform: translateY(-14px); } }
+  #intro-title { font-size: 2rem; font-weight: 900; color: #ff69b4; }
+  #intro-sub { font-size: 1rem; color: #b97fc9; }
+  #intro-btn {
+    background: linear-gradient(135deg, #a78bfa, #c084fc);
+    color: #fff; border: none; border-radius: 50px;
+    padding: 14px 50px; font-size: 1.3rem;
+    font-family: 'Nunito', sans-serif; font-weight: 800;
+    cursor: pointer; box-shadow: 0 4px 18px #c084fc55;
+    transition: transform .15s;
+  }
+  #intro-btn:hover { transform: translateY(-2px); }
+
+  /* ─── GAME SCREEN ─── */
+  #game-screen {
+    flex-direction: column;
+    background: #fff9fe;
+  }
+  #game-hud {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 20px;
+    background: #fff;
+    border-bottom: 2px solid #ffd6ec;
+    flex-shrink: 0;
+    height: 70px;
+  }
+  #hud-mascot { font-size: 2.2rem; }
+  #hud-level { font-size: 1rem; font-weight: 800; color: #b97fc9; }
+  #hud-hearts { font-size: 1.5rem; letter-spacing: 4px; }
+  #hud-score { font-size: 1rem; font-weight: 800; color: #ff69b4; }
+  #hud-progress {
+    font-size: .85rem; color: #ccc; font-weight: 700;
+  }
+  #game-area {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+  }
+  #input-bar {
+    padding: 10px 20px;
+    background: #fff;
+    border-top: 2px solid #ffd6ec;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+  }
+  #input-bar label { font-size: .9rem; color: #ccc; font-weight: 700; }
+  #type-input {
+    flex: 1;
+    border: 3px solid #ffd6ec;
+    border-radius: 50px;
+    padding: 10px 22px;
+    font-size: 1.3rem;
+    font-family: 'Nunito', sans-serif;
+    font-weight: 700;
+    outline: none;
+    background: #fff9fe;
+    color: #555;
+    transition: border-color .2s;
+  }
+  #type-input:focus { border-color: #ff69b4; }
+  #type-input.correct { border-color: #4ade80; background: #f0fdf4; }
+  #type-input.wrong { border-color: #f87171; background: #fef2f2; }
+  #submit-hint { font-size: .78rem; color: #ddd; font-weight: 600; white-space: nowrap; }
+
+  /* ─── TILE ─── */
+  .tile {
+    position: absolute;
+    background: #fff;
+    border: 3px solid #ffd6ec;
+    border-radius: 24px;
+    padding: 12px 22px;
+    font-size: 1.5rem;
+    font-weight: 900;
+    color: #555;
+    box-shadow: 0 4px 18px #ffd6ec88;
+    cursor: default;
+    transition: border-color .15s;
+    white-space: nowrap;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    min-width: 80px;
+    text-align: center;
+    z-index: 10;
+  }
+  .tile.active-target {
+    border-color: #ff69b4;
+    box-shadow: 0 4px 24px #ff69b466;
+  }
+  .tile .tile-word { font-size: 1.6rem; letter-spacing: 1px; }
+  .tile .tile-typed { font-size: .85rem; color: #ff69b4; min-height: 1em; }
+  .tile.burst {
+    animation: burst-anim .4s forwards;
+  }
+  @keyframes burst-anim {
+    0% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.35); opacity: .7; }
+    100% { transform: scale(0); opacity: 0; }
+  }
+  .tile.miss {
+    animation: miss-anim .5s forwards;
+    border-color: #fca5a5;
+  }
+  @keyframes miss-anim {
+    0% { transform: translateY(0); opacity: 1; }
+    100% { transform: translateY(40px); opacity: 0; }
+  }
+
+  /* ─── PARTICLES ─── */
+  .particle {
+    position: absolute;
+    pointer-events: none;
+    font-size: 1.3rem;
+    animation: particle-fly .7s forwards;
+    z-index: 100;
+  }
+  @keyframes particle-fly {
+    0% { transform: translate(0,0) scale(1); opacity: 1; }
+    100% { transform: translate(var(--dx), var(--dy)) scale(0); opacity: 0; }
+  }
+
+  /* ─── FEEDBACK MSG ─── */
+  #feedback-msg {
+    position: absolute;
+    left: 50%; top: 30%;
+    transform: translateX(-50%);
+    font-size: 2rem;
+    font-weight: 900;
+    color: #ff69b4;
+    text-shadow: 2px 2px 0 #ffb6d9;
+    pointer-events: none;
+    animation: feedback-pop .6s forwards;
+    z-index: 200;
+    white-space: nowrap;
+  }
+  @keyframes feedback-pop {
+    0% { transform: translateX(-50%) scale(.5); opacity: 0; }
+    30% { transform: translateX(-50%) scale(1.2); opacity: 1; }
+    70% { transform: translateX(-50%) scale(1); opacity: 1; }
+    100% { transform: translateX(-50%) scale(.9); opacity: 0; }
+  }
+
+  /* ─── STREAK BANNER ─── */
+  #streak-banner {
+    position: absolute;
+    top: 10px; left: 50%;
+    transform: translateX(-50%);
+    background: linear-gradient(135deg, #fbbf24, #f59e0b);
+    color: #fff;
+    border-radius: 50px;
+    padding: 6px 20px;
+    font-size: 1rem;
+    font-weight: 800;
+    display: none;
+    z-index: 150;
+    box-shadow: 0 3px 12px #f59e0b55;
+  }
+
+  /* ─── COMPLETE SCREEN ─── */
+  #complete-screen {
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(160deg, #fff0fb 0%, #f0f8ff 100%);
+    gap: 18px;
+  }
+  #complete-mascot { font-size: 7rem; animation: bounce 1s infinite alternate; }
+  #complete-title { font-size: 2.2rem; font-weight: 900; color: #ff69b4; }
+  #complete-stars { font-size: 3rem; }
+  #complete-stats { font-size: 1rem; color: #b97fc9; font-weight: 700; }
+  .complete-btns { display: flex; gap: 14px; }
+  .complete-btns button {
+    border: none; border-radius: 50px;
+    padding: 13px 36px; font-size: 1.1rem;
+    font-family: 'Nunito', sans-serif; font-weight: 800;
+    cursor: pointer; transition: transform .15s;
+  }
+  .complete-btns button:hover { transform: translateY(-2px); }
+  #replay-btn { background: #ffe4f4; color: #d966a6; }
+  #next-btn { background: linear-gradient(135deg, #ff69b4, #ff9de2); color: #fff; box-shadow: 0 4px 18px #ff69b455; }
+
+  /* ─── GAME OVER ─── */
+  #gameover-screen {
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(160deg, #fff0fb 0%, #f0f8ff 100%);
+    gap: 18px;
+  }
+  #gameover-mascot { font-size: 7rem; filter: grayscale(.5); }
+  #gameover-title { font-size: 2rem; font-weight: 900; color: #f87171; }
+  #gameover-sub { font-size: 1rem; color: #b97fc9; }
+  #gameover-retry {
+    background: linear-gradient(135deg, #ff69b4, #ff9de2);
+    color: #fff; border: none; border-radius: 50px;
+    padding: 14px 50px; font-size: 1.2rem;
+    font-family: 'Nunito', sans-serif; font-weight: 800;
+    cursor: pointer; box-shadow: 0 4px 18px #ff69b455;
+  }
+
+  /* ─── POWER-UP FLASH ─── */
+  #powerup-flash {
+    position: fixed; inset: 0;
+    background: radial-gradient(circle, #fde68a88 0%, transparent 70%);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity .3s;
+    z-index: 300;
+  }
+  #powerup-flash.show { opacity: 1; }
+
+  /* ─── TIME SLOW OVERLAY ─── */
+  #slow-indicator {
+    position: absolute;
+    top: 8px; right: 12px;
+    background: #a78bfa;
+    color: #fff;
+    border-radius: 50px;
+    padding: 4px 14px;
+    font-size: .85rem;
+    font-weight: 800;
+    display: none;
+    z-index: 150;
+  }
+
+  /* lives lost flash */
+  #heart-flash {
+    position: fixed; inset: 0;
+    background: #f8717122;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity .2s;
+    z-index: 250;
+  }
+  #heart-flash.show { opacity: 1; }
+</style>
+</head>
+<body>
+
+<!-- POWER-UP & HEART FLASH OVERLAYS -->
+<div id="powerup-flash"></div>
+<div id="heart-flash"></div>
+
+<!-- ══════════════════ TITLE SCREEN ══════════════════ -->
+<div id="title-screen" class="screen active">
+  <h1>✨ Kawaii Typing Friends ✨</h1>
+  <p class="subtitle">Type your way through 24 adorable levels!</p>
+  <div class="mascot-grid" id="title-mascot-grid"></div>
+  <button id="start-btn" onclick="showLevelSelect()">Let's Play! 🌸</button>
+</div>
+
+<!-- ══════════════════ LEVEL SELECT ══════════════════ -->
+<div id="level-screen" class="screen">
+  <h2>Choose Your Level 🌟</h2>
+  <div class="level-grid" id="level-grid"></div>
+  <button id="back-btn" onclick="showTitle()">← Back</button>
+</div>
+
+<!-- ══════════════════ INTRO SCREEN ══════════════════ -->
+<div id="intro-screen" class="screen">
+  <div id="intro-mascot"></div>
+  <div id="intro-title"></div>
+  <div id="intro-sub"></div>
+  <button id="intro-btn" onclick="startGame()">Start Typing! 🎉</button>
+</div>
+
+<!-- ══════════════════ GAME SCREEN ══════════════════ -->
+<div id="game-screen" class="screen">
+  <div id="game-hud">
+    <div style="display:flex;align-items:center;gap:10px">
+      <span id="hud-mascot"></span>
+      <div>
+        <div id="hud-level"></div>
+        <div id="hud-progress"></div>
+      </div>
+    </div>
+    <div id="hud-hearts"></div>
+    <div id="hud-score"></div>
+  </div>
+  <div id="game-area">
+    <div id="streak-banner"></div>
+    <div id="slow-indicator">⏱ Slow Time!</div>
+  </div>
+  <div id="input-bar">
+    <label>Type:</label>
+    <input type="text" id="type-input" autocomplete="off" autocorrect="off"
+           autocapitalize="off" spellcheck="false" placeholder="start typing…">
+    <span id="submit-hint">Enter or Space to submit</span>
+  </div>
+</div>
+
+<!-- ══════════════════ COMPLETE SCREEN ══════════════════ -->
+<div id="complete-screen" class="screen">
+  <div id="complete-mascot"></div>
+  <div id="complete-title"></div>
+  <div id="complete-stars"></div>
+  <div id="complete-stats"></div>
+  <div class="complete-btns">
+    <button id="replay-btn" onclick="replayLevel()">↩ Replay</button>
+    <button id="next-btn" onclick="nextLevel()">Next Level →</button>
+  </div>
+  <button id="back-btn2" style="background:#ffe4f4;color:#d966a6;border:none;border-radius:50px;padding:10px 28px;font-family:Nunito,sans-serif;font-weight:700;cursor:pointer;font-size:.9rem" onclick="showLevelSelect()">Level Select</button>
+</div>
+
+<!-- ══════════════════ GAME OVER SCREEN ══════════════════ -->
+<div id="gameover-screen" class="screen">
+  <div id="gameover-mascot"></div>
+  <div id="gameover-title">Oops! Don't give up! 💪</div>
+  <div id="gameover-sub">You're getting better every try!</div>
+  <button id="gameover-retry" onclick="replayLevel()">Try Again! 🌸</button>
+  <button style="background:#ffe4f4;color:#d966a6;border:none;border-radius:50px;padding:10px 28px;font-family:Nunito,sans-serif;font-weight:700;cursor:pointer;font-size:.9rem;margin-top:4px" onclick="showLevelSelect()">Level Select</button>
+</div>
+
+<script>
+// ════════════════════════════════════════════════════════
+//  DATA
+// ════════════════════════════════════════════════════════
+const LEVELS = [
+  {
+    id:1, name:"Fly", emoji:"🪰",
+    focus:"Home row letters",
+    words: "a s d f j k l ; a s d f f j k l ; a s d j k l a s d f j".split(" "),
+    minTiles:1, maxTiles:1, speed:.6, spawnMs:3200
+  },
+  {
+    id:2, name:"Fish", emoji:"🐟",
+    focus:"Top row letters",
+    words: "q w e r t y u i o p q w e r t y u i o p q w e r t".split(" "),
+    minTiles:1, maxTiles:2, speed:.75, spawnMs:3000
+  },
+  {
+    id:3, name:"Butterfly", emoji:"🦋",
+    focus:"Bottom row letters",
+    words: "z x c v b n m z x c v b n m z x c v b n z x c v b".split(" "),
+    minTiles:1, maxTiles:2, speed:.85, spawnMs:2900
+  },
+  {
+    id:4, name:"Seahorse", emoji:"🐠",
+    focus:"All letters mixed",
+    words: "a e i o u b c d f g h j k l m n p q r s t v w x y z a e i o u".split(" "),
+    minTiles:2, maxTiles:3, speed:1.0, spawnMs:2700
+  },
+  {
+    id:5, name:"Hamster", emoji:"🐹",
+    focus:"3-letter words",
+    words: ["the","and","for","not","but","all","big","can","did","get","had","has","him","his","how","let","man","may","now","old","our","put","say","she","too","use","way","who","day","one","top","two","why","yet","got","set","ten","via","yes","six"],
+    minTiles:1, maxTiles:2, speed:1.1, spawnMs:3000
+  },
+  {
+    id:6, name:"Squirrel", emoji:"🐿️",
+    focus:"Home-row short words",
+    words: ["add","ask","dad","fall","flask","glad","half","lads","slap","flag","lass","flask","alga","flash","dash","lash","sash","last","salt","fads","glad"],
+    minTiles:2, maxTiles:3, speed:1.2, spawnMs:2800
+  },
+  {
+    id:7, name:"Owl", emoji:"🦉",
+    focus:"Mixed 3-letter words",
+    words: ["cat","dog","run","fun","sun","hat","hot","cut","cup","bug","jug","mug","hug","tap","map","cap","lap","nap","rap","sap","bat","fat","mat","pat","rat","sat","bit","fit","hit","sit","wit","cot","dot","got","lot","pot","rot","tot","bot"],
+    minTiles:2, maxTiles:3, speed:1.35, spawnMs:2600
+  },
+  {
+    id:8, name:"Cat", emoji:"🐱",
+    focus:"3-letter words + repeats",
+    words: ["cat","dog","run","fun","sun","hat","hot","cut","cup","bug","jug","mug","hug","tap","map","cap","lap","nap","rap","sap","bat","fat","mat","pat","rat"],
+    minTiles:3, maxTiles:4, speed:1.5, spawnMs:2500
+  },
+  {
+    id:9, name:"Otter", emoji:"🦦",
+    focus:"4-letter words",
+    words: ["that","with","this","they","from","have","more","will","your","said","each","into","than","time","very","when","come","here","just","like","long","make","many","over","some","such","take","then","them","well","were","what","word","also","back","call","down","find","give","good","keep"],
+    minTiles:2, maxTiles:3, speed:1.5, spawnMs:2700
+  },
+  {
+    id:10, name:"Turtle", emoji:"🐢",
+    focus:"4-letter common words",
+    words: ["home","play","love","kind","bold","born","case","dear","does","else","ever","feel","food","free","full","girl","goes","gone","grow","hand","hard","help","high","hold","hope","idea","jump","knew","know","land","last","left","life","line","live","look","lost","made","mind","move","much"],
+    minTiles:3, maxTiles:4, speed:1.65, spawnMs:2500
+  },
+  {
+    id:11, name:"Monkey", emoji:"🐒",
+    focus:"4–5 letter words",
+    words: ["about","after","again","being","could","doing","every","first","going","great","happy","helps","those","their","there","think","water","world","would","young","other","place","right","small","sound","still","study","until","where","while","write","above","along","begin","below","bring","build","carry","catch","check"],
+    minTiles:3, maxTiles:4, speed:1.8, spawnMs:2400
+  },
+  {
+    id:12, name:"Dog", emoji:"🐶",
+    focus:"Longer short words",
+    words: ["learn","light","might","money","music","never","night","often","order","point","power","print","ready","round","serve","seven","shall","share","short","shown","since","sleep","smile","solve","space","spell","spend","stand","start","state","store","story","sugar","sweet","table","teeth","thank","three","today","tooth"],
+    minTiles:3, maxTiles:4, speed:1.95, spawnMs:2300
+  },
+  {
+    id:13, name:"Capybara", emoji:"🦫",
+    focus:"5-letter words",
+    words: ["apple","bread","clean","climb","close","cloud","cover","cross","crowd","dance","early","earth","eight","enter","equal","event","exact","extra","faith","fancy","favor","feast","fifth","fight","final","flame","flesh","float","floor","flower","focus","force","found","frame","front","fruit","giant","grace","grade","grain"],
+    minTiles:3, maxTiles:5, speed:2.1, spawnMs:2300
+  },
+  {
+    id:14, name:"Snake", emoji:"🐍",
+    focus:"5-letter mixed",
+    words: ["glass","globe","gloom","glory","glove","glue","grace","grand","grant","graph","grasp","grass","grave","great","greed","greet","grief","grill","grind","groan","group","grove","grown","guard","guess","guest","guide","guild","guile","guilt","guise","gusts","habit","happy","harsh","haven","heart","heavy","hedge","hence","herbs"],
+    minTiles:4, maxTiles:5, speed:2.3, spawnMs:2100
+  },
+  {
+    id:15, name:"Crocodile", emoji:"🐊",
+    focus:"5–6 letter words",
+    words: ["action","animal","answer","around","attack","autumn","beauty","before","better","bottle","bounce","bridge","bright","broken","butter","button","cactus","camera","candle","castle","change","circle","clever","closet","coffee","colour","coming","copper","corner","cotton","couple","cousin","create","credit","danger","decide","defeat","define","degree","dinner"],
+    minTiles:4, maxTiles:5, speed:2.4, spawnMs:2100
+  },
+  {
+    id:16, name:"Deer", emoji:"🦌",
+    focus:"6-letter words",
+    words: ["across","actual","advice","affair","afford","afraid","almost","always","around","basket","battle","belong","blanch","branch","breath","bright","bruise","budget","burden","butter","canopy","castle","caught","cement","center","chance","charge","cherry","choice","choose","church","circus","coffee","combat","commit","common","corner","cotton","create","crystal"],
+    minTiles:4, maxTiles:5, speed:2.55, spawnMs:2000
+  },
+  {
+    id:17, name:"Tiger", emoji:"🐯",
+    focus:"6-letter words + capitals",
+    words: ["Always","Before","Better","Bridge","Bright","Button","Castle","Change","Circle","Clever","Corner","Create","Danger","Decide","Defeat","Dinner","Double","Dragon","Easily","Either","Eleven","Energy","Enough","Escape","During","Fallen","Family","Famous","Finger","Flower","Follow","Forest","Friend","Future","Garden","Gather","Gentle","Golden","Figure"],
+    minTiles:4, maxTiles:6, speed:2.7, spawnMs:1900
+  },
+  {
+    id:18, name:"Lion", emoji:"🦁",
+    focus:"6–7 letter words",
+    words: ["another","balance","between","brought","channel","chapter","classic","collect","combine","comfort","command","compare","compete","concern","connect","contain","control","convert","correct","country","courage","crowded","culture","curious","current","curtain","cushion","cutting","decided","declare","defense","deliver","diamond","digital","disease","disturb","drawing","driving","dynamic"],
+    minTiles:4, maxTiles:6, speed:2.85, spawnMs:1900
+  },
+  {
+    id:19, name:"Monster", emoji:"👾",
+    focus:"Mixed length + phrases",
+    words: ["amazing","because","bedroom","beneath","blossom","breathe","captain","cartoon","ceiling","certain","charity","chicken","Chinese","choices","cleared","climate","closest","cluster","command","company","compass","complex","conduct","context","courage","covered","capture","careful","clearly","chicken","dancing","dashing","explore","forward","forward","freedom","habitat","history","horizon"],
+    minTiles:5, maxTiles:6, speed:3.0, spawnMs:1800
+  },
+  {
+    id:20, name:"Dinosaur", emoji:"🦕",
+    focus:"7–8 letter words",
+    words: ["absolute","abstract","academic","accident","accurate","achieved","actively","addition","adequate","adjusted","admitted","advanced","affected","alphabet","although","ambition","answered","anything","attitude","balanced","behavior","birthday","breathe","bringing","building","calendar","capacity","cardinal","cautious","centered","ceremony","champion","changing","children","claiming","climbing","clothing","commence","commonly"],
+    minTiles:5, maxTiles:6, speed:3.15, spawnMs:1800
+  },
+  {
+    id:21, name:"Elephant", emoji:"🐘",
+    focus:"7–9 letter words",
+    words: ["absolute","academic","achieved","addition","adequate","admitted","alphabet","ambition","balanced","behavior","birthday","building","calendar","capacity","champion","changing","children","climbing","combined","complete","composed","computer","conclude","consider","constant","continue","contrary","correct","creative","cultural","daughter","decision","describe","detailed","develop","directly","discover","distance","document"],
+    minTiles:5, maxTiles:7, speed:3.3, spawnMs:1700
+  },
+  {
+    id:22, name:"Human", emoji:"🧑",
+    focus:"8+ letter words",
+    words: ["absolute","academic","behavior","birthday","calendar","capacity","champion","children","combined","complete","computer","consider","constant","continue","creative","cultural","daughter","decision","describe","document","dramatic","educated","election","employed","enormous","everyone","evidence","exciting","exercise","existing","explicit","extended","external","favorite","favorite","february","flexible","followed","function","generate"],
+    minTiles:5, maxTiles:7, speed:3.5, spawnMs:1600
+  },
+  {
+    id:23, name:"Dragon", emoji:"🐲",
+    focus:"Advanced + themed words",
+    words: ["adventure","beautiful","brilliant","calculate","carefully","celebrate","character","chemistry","community","companion","completely","confident","confident","construct","dangerous","dedicated","dependent","different","discovery","elaborate","emergency","encourage","equipment","establish","excellent","exchange","existence","fantastic","following","generally","happiness","important","impossible","increased","influence","knowledge","landscape","leadership"],
+    minTiles:6, maxTiles:7, speed:3.7, spawnMs:1500
+  },
+  {
+    id:24, name:"Robot", emoji:"🤖",
+    focus:"Mastery — long words + sentences",
+    words: ["absolutely","accomplish","achievement","acknowledge","acquisition","adventure","application","appropriate","arrangement","comfortable","communicate","competition","complicated","concentrate","conjunction","consequence","considerable","construction","contribution","conversation","determination","development","difference","disappear","extraordinary","imagination","immediately","independent","information","intelligence","interesting","introduction","investigation","mathematical","nevertheless","opportunity","organization","performance","perseverance","presentation"],
+    minTiles:6, maxTiles:8, speed:4.0, spawnMs:1400
+  }
+];
+
+const PRAISE = ["You did it! 🌟","Amazing! ✨","Super! 💖","Perfect! 🎉","Great! 🌸","Yes! 💪","Wow! 🎊","Awesome! 🦋","Fantastic! ⭐","Keep going! 🌈"];
+const STREAK_PRAISE = ["5 in a row! ⚡","On fire! 🔥","Unstoppable! 🚀","Incredible! 🌟","YOU ROCK! 💎"];
+const CONFETTI_EMOJIS = ["✨","🌸","💖","⭐","🎉","💫","🦋","🌈","🍀","🎀"];
+
+// ════════════════════════════════════════════════════════
+//  STATE
+// ════════════════════════════════════════════════════════
+let currentLevelIdx = 0;
+let unlockedLevels = JSON.parse(localStorage.getItem('kf_unlocked') || '[0]');
+let levelStars = JSON.parse(localStorage.getItem('kf_stars') || '{}');
+
+let gameState = null; // running game state
+
+// ════════════════════════════════════════════════════════
+//  SCREEN HELPERS
+// ════════════════════════════════════════════════════════
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+function showTitle() {
+  buildTitleGrid();
+  showScreen('title-screen');
+}
+function showLevelSelect() {
+  buildLevelGrid();
+  showScreen('level-screen');
+}
+
+// ════════════════════════════════════════════════════════
+//  TITLE
+// ════════════════════════════════════════════════════════
+function buildTitleGrid() {
+  const grid = document.getElementById('title-mascot-grid');
+  grid.innerHTML = '';
+  LEVELS.forEach((lv, i) => {
+    const d = document.createElement('div');
+    d.className = 'mini' + (unlockedLevels.includes(i) ? '' : ' locked');
+    d.textContent = lv.emoji;
+    d.title = lv.name;
+    if (unlockedLevels.includes(i)) d.onclick = () => { currentLevelIdx = i; showIntro(); };
+    grid.appendChild(d);
+  });
+}
+
+// ════════════════════════════════════════════════════════
+//  LEVEL SELECT
+// ════════════════════════════════════════════════════════
+function buildLevelGrid() {
+  const grid = document.getElementById('level-grid');
+  grid.innerHTML = '';
+  LEVELS.forEach((lv, i) => {
+    const locked = !unlockedLevels.includes(i);
+    const stars = levelStars[i] || 0;
+    const d = document.createElement('div');
+    d.className = 'level-card' + (locked ? ' locked' : '');
+    d.innerHTML = `<div class="lc-emoji">${lv.emoji}</div>
+      <div class="lc-name">${lv.name}</div>
+      <div class="lc-num">Level ${lv.id}</div>
+      <div class="lc-stars">${'⭐'.repeat(stars)}${'☆'.repeat(3-stars)}</div>`;
+    if (!locked) d.onclick = () => { currentLevelIdx = i; showIntro(); };
+    grid.appendChild(d);
+  });
+}
+
+// ════════════════════════════════════════════════════════
+//  INTRO
+// ════════════════════════════════════════════════════════
+function showIntro() {
+  const lv = LEVELS[currentLevelIdx];
+  document.getElementById('intro-mascot').textContent = lv.emoji;
+  document.getElementById('intro-title').textContent = `Level ${lv.id} — ${lv.name}!`;
+  document.getElementById('intro-sub').textContent = `Focus: ${lv.focus}. Type 20 tiles to win!`;
+  showScreen('intro-screen');
+}
+
+// ════════════════════════════════════════════════════════
+//  GAME START
+// ════════════════════════════════════════════════════════
+function startGame() {
+  const lv = LEVELS[currentLevelIdx];
+  gameState = {
+    lv,
+    tiles: [],          // active tile objects
+    wordQueue: shuffle([...lv.words, ...lv.words, ...lv.words]).slice(0, 60),
+    wordIdx: 0,
+    hearts: 3,
+    score: 0,
+    cleared: 0,
+    streak: 0,
+    totalAttempts: 0,
+    correctAttempts: 0,
+    slowActive: false,
+    slowTimer: null,
+    spawnTimer: null,
+    animFrame: null,
+    running: true,
+    lastSpawn: 0,
+  };
+
+  document.getElementById('hud-mascot').textContent = lv.emoji;
+  document.getElementById('hud-level').textContent = `Level ${lv.id} — ${lv.name}`;
+  updateHUD();
+
+  const area = document.getElementById('game-area');
+  area.querySelectorAll('.tile, .particle, .feedback-msg').forEach(e => e.remove());
+  document.getElementById('type-input').value = '';
+  document.getElementById('type-input').className = '';
+  document.getElementById('streak-banner').style.display = 'none';
+  document.getElementById('slow-indicator').style.display = 'none';
+
+  showScreen('game-screen');
+  document.getElementById('type-input').focus();
+
+  scheduleNextSpawn();
+  gameState.animFrame = requestAnimationFrame(gameLoop);
+}
+
+// ════════════════════════════════════════════════════════
+//  SPAWN
+// ════════════════════════════════════════════════════════
+function scheduleNextSpawn() {
+  if (!gameState || !gameState.running) return;
+  const delay = gameState.slowActive ? gameState.lv.spawnMs * 1.8 : gameState.lv.spawnMs;
+  gameState.spawnTimer = setTimeout(() => {
+    spawnTile();
+    scheduleNextSpawn();
+  }, delay + (Math.random() * 600 - 300));
+}
+
+function spawnTile() {
+  if (!gameState || !gameState.running) return;
+  const { lv, tiles, wordQueue } = gameState;
+  if (tiles.length >= lv.maxTiles) return;
+  if (gameState.wordIdx >= wordQueue.length) return;
+
+  const word = wordQueue[gameState.wordIdx++];
+  const area = document.getElementById('game-area');
+  const areaW = area.clientWidth;
+  const tileW = Math.max(80, word.length * 22 + 44);
+  const x = Math.random() * (areaW - tileW - 20) + 10;
+
+  const el = document.createElement('div');
+  el.className = 'tile';
+  el.innerHTML = `<div class="tile-word">${word}</div><div class="tile-typed"></div>`;
+  el.style.left = x + 'px';
+  el.style.top = '-80px';
+  el.style.width = tileW + 'px';
+  area.appendChild(el);
+
+  const tile = { el, word, y: -80, x, speed: lv.speed };
+  tiles.push(tile);
+  updateActiveTarget();
+}
+
+// ════════════════════════════════════════════════════════
+//  GAME LOOP
+// ════════════════════════════════════════════════════════
+let lastTime = 0;
+function gameLoop(ts) {
+  if (!gameState || !gameState.running) return;
+  const dt = Math.min((ts - lastTime) / 16.67, 3); // delta in frames
+  lastTime = ts;
+
+  const area = document.getElementById('game-area');
+  const areaH = area.clientHeight;
+  const effectiveSpeed = gameState.slowActive ? 0.35 : 1.0;
+
+  const missed = [];
+  for (const tile of gameState.tiles) {
+    tile.y += tile.speed * effectiveSpeed * dt;
+    tile.el.style.top = tile.y + 'px';
+    if (tile.y > areaH) missed.push(tile);
+  }
+
+  for (const tile of missed) {
+    removeTile(tile, false);
+  }
+
+  gameState.animFrame = requestAnimationFrame(gameLoop);
+}
+
+// ════════════════════════════════════════════════════════
+//  INPUT
+// ════════════════════════════════════════════════════════
+document.getElementById('type-input').addEventListener('input', onTypeInput);
+document.getElementById('type-input').addEventListener('keydown', onKeyDown);
+
+function onKeyDown(e) {
+  if (e.key === 'Enter' || e.key === ' ') {
+    e.preventDefault();
+    submitTyped();
+  }
+}
+
+function onTypeInput() {
+  if (!gameState || !gameState.running) return;
+  const val = document.getElementById('type-input').value.trim();
+  const target = getActiveTarget();
+  if (!target) return;
+
+  // update tile's typed preview
+  const typedEl = target.el.querySelector('.tile-typed');
+  const word = target.word;
+
+  if (word.toLowerCase().startsWith(val.toLowerCase())) {
+    document.getElementById('type-input').className = val.length === word.length ? 'correct' : '';
+    typedEl.textContent = val;
+  } else {
+    document.getElementById('type-input').className = 'wrong';
+    typedEl.textContent = val;
+  }
+
+  // auto-submit single letters
+  if (word.length === 1 && val.length === 1) {
+    submitTyped();
+  }
+}
+
+function submitTyped() {
+  if (!gameState || !gameState.running) return;
+  const input = document.getElementById('type-input');
+  const val = input.value.trim();
+  if (!val) return;
+
+  const target = getActiveTarget();
+  if (!target) { input.value = ''; return; }
+
+  gameState.totalAttempts++;
+  if (val.toLowerCase() === target.word.toLowerCase()) {
+    // CORRECT
+    gameState.correctAttempts++;
+    gameState.streak++;
+    gameState.score += scoreForWord(target.word, gameState.streak);
+    gameState.cleared++;
+    burstTile(target);
+    showFeedback(PRAISE[Math.floor(Math.random() * PRAISE.length)]);
+    if (gameState.streak >= 5 && gameState.streak % 5 === 0) triggerStreakPowerup();
+    updateHUD();
+    if (gameState.cleared >= 20) { endLevel(true); return; }
+  } else {
+    // WRONG
+    gameState.streak = 0;
+    showFeedback('Try again! 💕');
+    input.className = 'wrong';
+    setTimeout(() => { if (input.className === 'wrong') input.className = ''; }, 400);
+  }
+
+  input.value = '';
+  const typedEl = target.el.querySelector('.tile-typed');
+  if (typedEl) typedEl.textContent = '';
+}
+
+function scoreForWord(word, streak) {
+  const base = word.length * 10;
+  const streakBonus = streak >= 5 ? Math.floor(streak / 5) * 20 : 0;
+  return base + streakBonus;
+}
+
+// ════════════════════════════════════════════════════════
+//  TILE MANAGEMENT
+// ════════════════════════════════════════════════════════
+function getActiveTarget() {
+  if (!gameState) return null;
+  return gameState.tiles.find(t => t.el.classList.contains('active-target')) || gameState.tiles[0] || null;
+}
+
+function updateActiveTarget() {
+  if (!gameState) return;
+  // lowest tile = closest to bottom
+  gameState.tiles.forEach(t => t.el.classList.remove('active-target'));
+  if (gameState.tiles.length === 0) return;
+  const lowest = gameState.tiles.reduce((a, b) => a.y > b.y ? a : b);
+  lowest.el.classList.add('active-target');
+}
+
+function burstTile(tile) {
+  tile.el.classList.add('burst');
+  spawnParticles(tile.el);
+  gameState.tiles = gameState.tiles.filter(t => t !== tile);
+  setTimeout(() => { if (tile.el.parentNode) tile.el.remove(); }, 400);
+  updateActiveTarget();
+}
+
+function removeTile(tile, playMiss = true) {
+  if (playMiss) {
+    tile.el.classList.add('miss');
+    gameState.hearts--;
+    gameState.streak = 0;
+    flashHeart();
+    updateHUD();
+    if (gameState.hearts <= 0) {
+      setTimeout(() => endLevel(false), 600);
+    }
+  }
+  gameState.tiles = gameState.tiles.filter(t => t !== tile);
+  setTimeout(() => { if (tile.el.parentNode) tile.el.remove(); }, 600);
+  updateActiveTarget();
+}
+
+// ════════════════════════════════════════════════════════
+//  PARTICLES
+// ════════════════════════════════════════════════════════
+function spawnParticles(tileEl) {
+  const area = document.getElementById('game-area');
+  const rect = tileEl.getBoundingClientRect();
+  const areaRect = area.getBoundingClientRect();
+  const cx = rect.left - areaRect.left + rect.width / 2;
+  const cy = rect.top - areaRect.top + rect.height / 2;
+
+  for (let i = 0; i < 8; i++) {
+    const p = document.createElement('div');
+    p.className = 'particle';
+    p.textContent = CONFETTI_EMOJIS[Math.floor(Math.random() * CONFETTI_EMOJIS.length)];
+    const angle = (i / 8) * Math.PI * 2;
+    const dist = 60 + Math.random() * 40;
+    p.style.setProperty('--dx', Math.cos(angle) * dist + 'px');
+    p.style.setProperty('--dy', Math.sin(angle) * dist + 'px');
+    p.style.left = cx + 'px';
+    p.style.top = cy + 'px';
+    area.appendChild(p);
+    setTimeout(() => p.remove(), 700);
+  }
+}
+
+function showFeedback(text) {
+  const area = document.getElementById('game-area');
+  const old = area.querySelector('.feedback-msg');
+  if (old) old.remove();
+  const el = document.createElement('div');
+  el.className = 'feedback-msg';
+  el.id = 'feedback-msg';
+  el.textContent = text;
+  el.style.cssText = `
+    position:absolute;left:50%;top:35%;transform:translateX(-50%);
+    font-size:1.8rem;font-weight:900;color:#ff69b4;
+    text-shadow:2px 2px 0 #ffb6d9;pointer-events:none;
+    animation:feedback-pop .6s forwards;z-index:200;white-space:nowrap;
+    font-family:'Nunito',sans-serif;
+  `;
+  area.appendChild(el);
+  setTimeout(() => el.remove(), 650);
+}
+
+function flashHeart() {
+  const f = document.getElementById('heart-flash');
+  f.classList.add('show');
+  setTimeout(() => f.classList.remove('show'), 300);
+}
+
+// ════════════════════════════════════════════════════════
+//  STREAK POWER-UP
+// ════════════════════════════════════════════════════════
+function triggerStreakPowerup() {
+  const banner = document.getElementById('streak-banner');
+  banner.textContent = STREAK_PRAISE[Math.floor(Math.random() * STREAK_PRAISE.length)] + ' ⏱ Slow Time!';
+  banner.style.display = 'block';
+  setTimeout(() => banner.style.display = 'none', 2500);
+
+  const f = document.getElementById('powerup-flash');
+  f.classList.add('show');
+  setTimeout(() => f.classList.remove('show'), 600);
+
+  document.getElementById('slow-indicator').style.display = 'block';
+  gameState.slowActive = true;
+  clearTimeout(gameState.slowTimer);
+  gameState.slowTimer = setTimeout(() => {
+    gameState.slowActive = false;
+    document.getElementById('slow-indicator').style.display = 'none';
+  }, 5000);
+
+  // bonus heart if < 3
+  if (gameState.hearts < 3 && gameState.streak >= 10) {
+    gameState.hearts = Math.min(3, gameState.hearts + 1);
+    updateHUD();
+  }
+}
+
+// ════════════════════════════════════════════════════════
+//  HUD
+// ════════════════════════════════════════════════════════
+function updateHUD() {
+  if (!gameState) return;
+  document.getElementById('hud-hearts').textContent = '❤️'.repeat(gameState.hearts) + '🤍'.repeat(3 - gameState.hearts);
+  document.getElementById('hud-score').textContent = `Score: ${gameState.score}`;
+  document.getElementById('hud-progress').textContent = `${gameState.cleared}/20 tiles`;
+}
+
+// ════════════════════════════════════════════════════════
+//  END LEVEL
+// ════════════════════════════════════════════════════════
+function endLevel(win) {
+  if (!gameState) return;
+  gameState.running = false;
+  cancelAnimationFrame(gameState.animFrame);
+  clearTimeout(gameState.spawnTimer);
+
+  // clean up tiles
+  document.querySelectorAll('.tile').forEach(e => e.remove());
+
+  if (win) {
+    const stars = gameState.hearts === 3 ? 3 : gameState.hearts === 2 ? 2 : 1;
+    const accuracy = gameState.totalAttempts > 0
+      ? Math.round(gameState.correctAttempts / gameState.totalAttempts * 100) : 100;
+
+    // save progress
+    if (!unlockedLevels.includes(currentLevelIdx + 1) && currentLevelIdx + 1 < LEVELS.length) {
+      unlockedLevels.push(currentLevelIdx + 1);
+      localStorage.setItem('kf_unlocked', JSON.stringify(unlockedLevels));
+    }
+    if ((levelStars[currentLevelIdx] || 0) < stars) {
+      levelStars[currentLevelIdx] = stars;
+      localStorage.setItem('kf_stars', JSON.stringify(levelStars));
+    }
+
+    const lv = LEVELS[currentLevelIdx];
+    document.getElementById('complete-mascot').textContent = lv.emoji;
+    document.getElementById('complete-title').textContent = '🎉 Level Complete! 🎉';
+    document.getElementById('complete-stars').textContent = '⭐'.repeat(stars) + '☆'.repeat(3 - stars);
+    document.getElementById('complete-stats').textContent =
+      `Score: ${gameState.score}  |  Accuracy: ${accuracy}%  |  Hearts left: ${gameState.hearts}`;
+    document.getElementById('next-btn').style.display =
+      currentLevelIdx + 1 < LEVELS.length ? '' : 'none';
+    showScreen('complete-screen');
+  } else {
+    const lv = LEVELS[currentLevelIdx];
+    document.getElementById('gameover-mascot').textContent = lv.emoji;
+    showScreen('gameover-screen');
+  }
+}
+
+// ════════════════════════════════════════════════════════
+//  NAVIGATION
+// ════════════════════════════════════════════════════════
+function replayLevel() { showIntro(); }
+function nextLevel() {
+  if (currentLevelIdx + 1 < LEVELS.length) {
+    currentLevelIdx++;
+    showIntro();
+  }
+}
+
+// ════════════════════════════════════════════════════════
+//  UTILS
+// ════════════════════════════════════════════════════════
+function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+// ════════════════════════════════════════════════════════
+//  INIT
+// ════════════════════════════════════════════════════════
+buildTitleGrid();
+
+// Keep input focused during game
+document.addEventListener('click', () => {
+  if (document.getElementById('game-screen').classList.contains('active')) {
+    document.getElementById('type-input').focus();
+  }
+});
+</script>
+</body>
+</html>
