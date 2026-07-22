@@ -14,14 +14,21 @@ import './styles/title.css';
 import { SceneManager } from './ui/scenes';
 import { createTitle } from './ui/screens/title';
 import { createOnboarding } from './ui/screens/onboarding';
+import { createMobileGate, needsKeyboardGate } from './ui/screens/mobileGate';
 import { loadOnboarding } from './storage/progress';
 
 const app = document.getElementById('app');
 if (!app) {
-  throw new Error('#app mount point missing from game.html');
+  throw new Error('#app mount point missing from index.html');
 }
 
 const scenes = new SceneManager(app);
-// First run → the one-tap starting-point pick (age lever (a), §6); afterwards go
-// straight to the friends grid. The pick is remembered so we never nag again.
-scenes.go(loadOnboarding()?.done ? createTitle : createOnboarding);
+
+// Normal boot: first run → the one-tap starting-point pick (age lever (a), §6);
+// afterwards straight to the friends grid.
+const boot = loadOnboarding()?.done ? createTitle : createOnboarding;
+
+// A physical-keyboard game (fix #4): on a touch device with no hardware keyboard
+// show a friendly invite instead of an unplayable game, with a "continue anyway"
+// path into the normal boot flow.
+scenes.go(needsKeyboardGate() ? createMobileGate(boot) : boot);
