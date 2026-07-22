@@ -25,6 +25,7 @@ import { initHearts, accrueRegen, loseHeart, regenFraction } from '../../game/he
 import type { Scene, SceneFactory, SceneNavigator } from '../scenes';
 import { createTitle } from './title';
 import { createGameOver } from './gameOver';
+import { createLevelComplete } from './levelComplete';
 
 /** Options for launching the play scene. */
 export interface PlayOptions {
@@ -130,7 +131,11 @@ export function createPlay(level: number, options: PlayOptions = {}): SceneFacto
               queueMicrotask(() => nav.go(createGameOver(level)));
             } else if (snap.state === 'won' && !ended) {
               ended = true;
-              hint.textContent = '🎉 You cleared them all! (level-complete scene comes in step 8)';
+              // WIN mirror of the fail path: the Session already flipped to 'won'
+              // this same tick (freezing spawn + fall), so we only transition the
+              // scene. Capture hearts (→ stars) and accuracy from the win snapshot.
+              const result = { hearts: snap.hearts, accuracy: snap.accuracy };
+              queueMicrotask(() => nav.go(createLevelComplete(level, result)));
             }
           },
         });

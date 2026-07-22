@@ -56,6 +56,49 @@
   color: var(--ink-muted);
 }
 
+/* Win: gold stars by hearts remaining. Empty slots stay faint so the earned
+ * ones read as a reward, not a full row you always get (§7 gold = luxury signal). */
+.endcard__stars {
+  display: flex;
+  gap: var(--space-2);
+  font-size: 2.4rem;
+  line-height: 1;
+}
+.endcard__star {
+  color: var(--ink-muted);
+  opacity: 0.22;
+}
+.endcard__star.is-earned {
+  color: var(--gold);
+  opacity: 1;
+  text-shadow: 0 1px 6px rgba(233, 180, 76, 0.55);
+  animation: endcard-star-pop var(--dur-med, 320ms) var(--ease-spring) both;
+}
+/* Stagger the pops left→right so the rating lands with a little rhythm. */
+.endcard__star:nth-child(2).is-earned { animation-delay: 90ms; }
+.endcard__star:nth-child(3).is-earned { animation-delay: 180ms; }
+
+.endcard__scoreline {
+  display: flex;
+  gap: var(--space-4);
+  color: var(--ink-muted);
+  font-size: var(--fs-body);
+}
+.endcard__score-value {
+  color: var(--tile-ink);
+  font-weight: var(--fw-semibold);
+}
+
+@keyframes endcard-star-pop {
+  from { transform: scale(0.2) rotate(-18deg); opacity: 0; }
+  60% { transform: scale(1.18) rotate(6deg); }
+  to { transform: scale(1) rotate(0); opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .endcard__star.is-earned { animation: none; }
+}
+
 .endcard__actions {
   display: flex;
   gap: var(--space-3);
