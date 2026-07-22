@@ -35,10 +35,13 @@ export interface TileView {
   setPosition(x: number, y: number): void;
   /** Fill the typed-prefix liquid to `fraction` ∈ [0,1] (step 3). */
   fillTo(fraction: number): void;
+  /** Tiny bounce on the just-filled tile after a correct keystroke (fix #5). */
+  bump(): void;
   /** Nudge/shake on a wrong key without failing the tile (step 3). */
   shake(): void;
-  /** Pop-and-celebrate on clear; resolves once the tile can be removed. */
-  clear(): Promise<void>;
+  /** Pop-and-celebrate on clear; resolves once the tile can be removed.
+   *  `points` (optional) floats up as a "+N" reward (fix #5). */
+  clear(points?: number): Promise<void>;
   /** Sad escape when the tile reaches the bottom; resolves after the fade. */
   escape(): Promise<void>;
   /** Remove immediately (teardown). */
@@ -96,6 +99,14 @@ export function createTile(opts: TileOptions): TileView {
       fill.style.width = `${pct}%`;
     },
 
+    bump() {
+      // Tiny per-correct-keystroke squash on the just-filled tile (fix #5).
+      if (reducedMotion()) return;
+      capsule.classList.remove('tile__capsule--bump');
+      void capsule.offsetWidth; // reflow so rapid keystrokes retrigger it
+      capsule.classList.add('tile__capsule--bump');
+    },
+
     shake() {
       capsule.classList.remove('tile__capsule--shake');
       // Force reflow so the animation can retrigger on rapid repeats.
@@ -103,7 +114,21 @@ export function createTile(opts: TileOptions): TileView {
       capsule.classList.add('tile__capsule--shake');
     },
 
-    clear() {
+    clear(points) {
+      // Correct-completion delight (fix #5), all skipped under reduced-motion:
+      //  - the mascot hops, a sparkle pops, and an optional "+points" floats up.
+      // These are ephemeral children removed after their short animations so
+      // they never linger past the capsule's pop-out.
+      if (!reducedMotion()) {
+        const art = capsule.querySelector<HTMLElement>('.tile__mascot');
+        art?.classList.add('tile__mascot--hop');
+        // Sparkle + "+points" attach to the tile ROOT (the capsule clips overflow),
+        // so they can rise above the capsule edge without being cut off.
+        spawnEphemeral(el, 'tile__sparkle', '✨', 720);
+        if (typeof points === 'number' && points > 0) {
+          spawnEphemeral(el, 'tile__points', `+${points}`, 780);
+        }
+      }
       capsule.classList.add('tile__capsule--clear');
       return wait(POP_MS);
     },
@@ -122,4 +147,22 @@ export function createTile(opts: TileOptions): TileView {
 /** Small promise timer used to sequence removal after an exit animation. */
 function wait(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/** True when the user asked for reduced motion — celebrations are suppressed (§7.4). */
+function reducedMotion(): boolean {
+  return typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+}
+
+/**
+ * Append a short-lived decorative element (sparkle / floating points), then
+ * remove it after `ms`. Purely cosmetic and aria-hidden — never in the a11y tree.
+ */
+function spawnEphemeral(parent: HTMLElement, className: string, text: string, ms: number): void {
+  const node = document.createElement('span');
+  node.className = className;
+  node.textContent = text;
+  node.setAttribute('aria-hidden', 'true');
+  parent.appendChild(node);
+  setTimeout(() => node.remove(), ms);
 }

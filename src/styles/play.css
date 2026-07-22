@@ -275,6 +275,64 @@
   75% { transform: translateX(4px); }
 }
 
+/* ---- Correct-type delight (fix #5) — tiny, fast, subtle ---- */
+
+/* Per-correct-keystroke squash on the just-filled tile. */
+.tile__capsule--bump {
+  animation: tile-bump 160ms var(--ease-spring);
+}
+@keyframes tile-bump {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.05, 0.95); }
+  100% { transform: scale(1); }
+}
+
+/* Mascot hop/wiggle on a completed tile. */
+.tile__mascot--hop {
+  animation: tile-mascot-hop 340ms var(--ease-spring);
+}
+@keyframes tile-mascot-hop {
+  0% { transform: translateY(0) rotate(0); }
+  35% { transform: translateY(-7px) rotate(-8deg); }
+  70% { transform: translateY(0) rotate(6deg); }
+  100% { transform: translateY(0) rotate(0); }
+}
+
+/* Sparkle star popping above the cleared tile. */
+.tile__sparkle {
+  position: absolute;
+  top: -6px;
+  left: 50%;
+  font-size: 1.4rem;
+  pointer-events: none;
+  transform: translate(-50%, 0) scale(0.4);
+  animation: tile-sparkle 700ms var(--ease-out) forwards;
+}
+@keyframes tile-sparkle {
+  0% { opacity: 0; transform: translate(-50%, 0) scale(0.3) rotate(-20deg); }
+  40% { opacity: 1; transform: translate(-50%, -14px) scale(1.15) rotate(8deg); }
+  100% { opacity: 0; transform: translate(-50%, -30px) scale(0.9) rotate(0); }
+}
+
+/* Floating "+points" reward, in the gold luxury signal. */
+.tile__points {
+  position: absolute;
+  top: -2px;
+  right: 8px;
+  font-family: var(--font-mono);
+  font-weight: var(--fw-semibold);
+  font-size: 1rem;
+  color: var(--gold);
+  text-shadow: 0 1px 4px rgba(233, 180, 76, 0.5);
+  pointer-events: none;
+  animation: tile-points 760ms var(--ease-out) forwards;
+}
+@keyframes tile-points {
+  0% { opacity: 0; transform: translateY(4px) scale(0.8); }
+  30% { opacity: 1; transform: translateY(-8px) scale(1.05); }
+  100% { opacity: 0; transform: translateY(-30px) scale(1); }
+}
+
 /* Motion restraint (§7.4): swap springs for quick fades, no ambient stretch. */
 @media (prefers-reduced-motion: reduce) {
   .tile__capsule {
