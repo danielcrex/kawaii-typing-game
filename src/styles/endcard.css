@@ -28,8 +28,11 @@
 .endcard__mascot {
   width: 128px;
   height: 128px;
-  object-fit: contain;
-  border-radius: var(--radius-md);
+  /* Uniform circular sticker medallion (fix #3b). */
+  border-radius: 50%;
+  object-fit: cover;
+  background: var(--medallion-bg);
+  box-shadow: 0 0 0 4px var(--medallion-ring), var(--shadow-md);
   animation: endcard-bob 3s var(--ease-out) infinite alternate;
 }
 .endcard__mascot--fallback {

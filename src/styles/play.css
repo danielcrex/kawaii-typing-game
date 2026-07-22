@@ -202,8 +202,12 @@
   position: relative;
   width: 44px;
   height: 44px;
-  object-fit: contain;
-  border-radius: var(--radius-md);
+  /* Uniform circular sticker medallion (fix #3b): cover fills the disc so each
+     JPG's near-white rectangle is cropped away, and every mascot reads the same. */
+  border-radius: 50%;
+  object-fit: cover;
+  background: var(--medallion-bg);
+  box-shadow: 0 0 0 2px var(--medallion-ring), var(--shadow-sm);
 }
 .tile__mascot--fallback {
   display: flex;

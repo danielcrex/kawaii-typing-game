@@ -47,6 +47,12 @@
   --radius-lg: 28px;
   --radius-pill: 999px;
 
+  /* ---- Mascot medallion (fix #3b) ---- */
+  /* A uniform circular "sticker" background + ring so all 24 mascots read
+     identically, regardless of each source JPG's mismatched near-white bg. */
+  --medallion-bg: radial-gradient(circle at 50% 38%, #ffffff, #f4ecf3);
+  --medallion-ring: rgba(255, 255, 255, 0.92);
+
   /* ---- Spacing scale ---- */
   --space-1: 4px;
   --space-2: 8px;
