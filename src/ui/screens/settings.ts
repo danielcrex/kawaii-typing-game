@@ -8,6 +8,9 @@
  */
 import '../../styles/settings.css';
 import { Sound } from '../../audio/sound';
+import { MASCOTS } from '../../data/mascots';
+import { createOnboarding } from './onboarding';
+import { createPlay } from './play';
 import type { SceneNavigator } from '../scenes';
 
 /** Open the settings overlay. `nav` lets the start-point section change scenes. */
@@ -87,7 +90,32 @@ export function openSettings(nav: SceneNavigator): void {
   backdrop.querySelector<HTMLButtonElement>('[data-done]')!.focus();
 }
 
-// Populated in fix #5.
-function fillStartSection(_slot: HTMLElement, _nav: SceneNavigator, _close: () => void): void {
-  /* fix #5 fills this */
+/**
+ * Starting-point / level section (fix #5) — makes the first-run onboarding
+ * reachable again so a player is never locked into their first choice, and adds
+ * a level jump.
+ */
+function fillStartSection(slot: HTMLElement, nav: SceneNavigator, close: () => void): void {
+  const options = MASCOTS.map((m) => `<option value="${m.level}">Level ${m.level} — ${m.name}</option>`).join('');
+  slot.innerHTML = `
+    <h3 class="settings__h">Starting point</h3>
+    <button class="settings__action" type="button" data-replay>Choose “do you know your letters?” again</button>
+    <div class="settings__select">
+      <label for="ktf-jump">Jump to a level</label>
+      <select id="ktf-jump" data-jump>${options}</select>
+    </div>
+    <button class="settings__action" type="button" data-go>Go to that level →</button>
+  `;
+
+  slot.querySelector<HTMLButtonElement>('[data-replay]')!.addEventListener('click', () => {
+    close();
+    nav.go(createOnboarding);
+  });
+
+  const jump = slot.querySelector<HTMLSelectElement>('[data-jump]')!;
+  slot.querySelector<HTMLButtonElement>('[data-go]')!.addEventListener('click', () => {
+    const level = Number(jump.value) || 1;
+    close();
+    nav.go(createPlay(level));
+  });
 }
