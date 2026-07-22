@@ -28,6 +28,8 @@ interface ProgressData {
   intensityByPhase: Partial<Record<PhaseId, number>>;
   /** Optional so existing v2 saves (pre-onboarding) load without migration. */
   onboarding?: OnboardingData;
+  /** Keyboard-guide toggle (§5.4). Undefined → default on. */
+  guideOn?: boolean;
 }
 
 function fresh(): ProgressData {
@@ -88,5 +90,18 @@ export function loadOnboarding(): OnboardingData | undefined {
 export function saveOnboarding(entryLevel: number): void {
   const data = load();
   data.onboarding = { done: true, entryLevel: Math.min(24, Math.max(1, Math.round(entryLevel))) };
+  save(data);
+}
+
+/** Keyboard-guide toggle (§5.4). Defaults ON for the youngest (find-the-glowing-key). */
+export function loadGuideOn(): boolean {
+  const g = load().guideOn;
+  return typeof g === 'boolean' ? g : true;
+}
+
+/** Persist the keyboard-guide toggle. */
+export function saveGuideOn(on: boolean): void {
+  const data = load();
+  data.guideOn = on;
   save(data);
 }
