@@ -30,6 +30,8 @@ interface ProgressData {
   onboarding?: OnboardingData;
   /** Keyboard-guide toggle (§5.4). Undefined → default on. */
   guideOn?: boolean;
+  /** Whole-hand tile cue toggle (beginner tier). Undefined → default on. */
+  handCueOn?: boolean;
   /** Audio prefs (§9). Undefined → sensible defaults. */
   audio?: AudioPrefs;
 }
@@ -116,6 +118,19 @@ export function loadGuideOn(): boolean {
 export function saveGuideOn(on: boolean): void {
   const data = load();
   data.guideOn = on;
+  save(data);
+}
+
+/** Whole-hand tile cue toggle (fix #5). Default on; keyboard glow is separate. */
+export function loadHandCueOn(): boolean {
+  const h = load().handCueOn;
+  return typeof h === 'boolean' ? h : true;
+}
+
+/** Persist the hand-cue toggle. */
+export function saveHandCueOn(on: boolean): void {
+  const data = load();
+  data.handCueOn = on;
   save(data);
 }
 
