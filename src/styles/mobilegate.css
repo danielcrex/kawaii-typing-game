@@ -1,0 +1,46 @@
+/* No-keyboard gate (fix #4) — a warm full-screen invite, not a scold. */
+.mgate {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-5);
+}
+.mgate__card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4);
+  max-width: 440px;
+  padding: var(--space-8) var(--space-6);
+  text-align: center;
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  border-radius: var(--radius-lg);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.8));
+  box-shadow: var(--shadow-lg), inset 0 1px 0 rgba(255, 255, 255, 0.95);
+}
+.mgate__emoji { font-size: 3rem; line-height: 1; }
+.mgate__title {
+  font-family: var(--font-display);
+  font-weight: var(--fw-semibold);
+  font-size: var(--fs-h1);
+  color: var(--tile-ink);
+  margin: 0;
+}
+.mgate__msg {
+  margin: 0;
+  color: var(--ink-muted);
+}
+.mgate__continue {
+  margin-top: var(--space-2);
+  font-family: var(--font-ui);
+  font-weight: var(--fw-medium);
+  font-size: var(--fs-small);
+  color: var(--ink-muted);
+  background: none;
+  border: none;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.mgate__continue:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }

@@ -7,6 +7,8 @@
  * capsule if its image is missing (§8.3) — a missing asset never crashes.
  */
 import { MASCOTS, mascotFallbackColor, type MascotDef } from '../../data/mascots';
+import { Sound } from '../../audio/sound';
+import { openSettings } from './settings';
 import type { Scene, SceneFactory, SceneNavigator } from '../scenes';
 import { createPlay } from './play';
 
@@ -17,9 +19,14 @@ export const createTitle: SceneFactory = (nav: SceneNavigator): Scene => {
   const header = document.createElement('header');
   header.className = 'title__header';
   header.innerHTML = `
+    <button class="title__settings" type="button" aria-label="Settings" title="Settings">⚙️</button>
     <h1 class="title__logo"><span class="spark">✨</span> Kawaii Typing Friends <span class="spark">✨</span></h1>
     <p class="title__tagline">Pick a friend and start typing!</p>
   `;
+  header.querySelector<HTMLButtonElement>('.title__settings')!.addEventListener('click', () => {
+    Sound.menuTap();
+    openSettings(nav);
+  });
 
   const grid = document.createElement('div');
   grid.className = 'mascot-grid';
@@ -62,7 +69,10 @@ function createMascotChip(mascot: MascotDef, nav: SceneNavigator): HTMLElement {
   name.textContent = mascot.name;
 
   chip.append(art, level, name);
-  chip.addEventListener('click', () => nav.go(createPlay(mascot.level)));
+  chip.addEventListener('click', () => {
+    Sound.menuTap();
+    nav.go(createPlay(mascot.level));
+  });
   return chip;
 }
 

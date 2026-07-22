@@ -54,7 +54,7 @@ export interface TileCue {
 
 /** Nominal cue-box sizes (px) used for placement math, per form. */
 const PIP = { w: 108, h: 30 };
-const HAND = { w: 148, h: 86 };
+const HAND = { w: 162, h: 98 };
 const GAP = 10;
 
 /** Which hand + display slot (0..4) each finger occupies in the diagram. */
@@ -70,9 +70,15 @@ const HAND_SLOT: Record<Finger, { hand: 'l' | 'r'; slot: number }> = {
   'r-pinky': { hand: 'r', slot: 4 },
 };
 
-/** Left hand shows pinky→thumb; right shows thumb→pinky (mirror). */
-const LEFT_SLOTS = ['f-pinky', 'f-ring', 'f-mid', 'f-idx', 'f-thumb'];
-const RIGHT_SLOTS = ['f-thumb', 'f-idx', 'f-mid', 'f-ring', 'f-pinky'];
+/**
+ * Per-hand digit layout in SLOT ORDER (matches HAND_SLOT). Left hand shows
+ * pinky→thumb, right shows thumb→pinky; heights shape a natural silhouette and
+ * the thumb is shorter + angled outward.
+ */
+const HAND_LAYOUT: Record<'l' | 'r', { h: number; thumb?: boolean }[]> = {
+  l: [{ h: 26 }, { h: 34 }, { h: 40 }, { h: 36 }, { h: 24, thumb: true }],
+  r: [{ h: 24, thumb: true }, { h: 36 }, { h: 40 }, { h: 34 }, { h: 26 }],
+};
 
 function intersects(a: CueRect, b: CueRect, margin = 4): boolean {
   return (
@@ -114,44 +120,47 @@ function place(t: CueRect, others: readonly CueRect[], field: FieldBox, cw: numb
   return null;
 }
 
+/** SVG for one hand: rounded digits growing out of a palm, indexed by slot. */
+function handSVG(which: 'l' | 'r'): string {
+  const digits = HAND_LAYOUT[which];
+  const W = 12;
+  const G = 5;
+  const BASE = 54; // y where digits meet the palm
+  let x = 7;
+  const parts: string[] = [];
+  digits.forEach((d, i) => {
+    const fy = BASE - d.h;
+    const cx = x + W / 2;
+    const rot = d.thumb ? (which === 'l' ? 22 : -22) : 0;
+    // Each digit is a rounded bar that extends into the palm so they read as one.
+    parts.push(
+      `<g transform="rotate(${rot} ${cx} ${BASE})"><rect class="cf" data-slot="${i}" x="${x}" y="${fy}" width="${W}" height="${d.h + 18}" rx="${W / 2}"/></g>`,
+    );
+    x += W + G;
+  });
+  const palmW = x - 7 - G + 12;
+  const palm = `<rect class="cpalm" x="1" y="48" width="${palmW}" height="22" rx="11"/>`;
+  return `<svg class="cue__handsvg" data-hand="${which}" viewBox="0 0 ${x + 4} 74" role="img">${palm}${parts.join('')}</svg>`;
+}
+
 /** Build the two-hand diagram once; `raise` updates which finger is lifted. */
 function buildHands(): { el: HTMLElement; raise: (finger: Finger, color: string) => void } {
   const el = document.createElement('div');
   el.className = 'cue__hands';
-  const mkHand = (which: 'l' | 'r'): HTMLElement => {
-    const hand = document.createElement('div');
-    hand.className = 'cue__hand';
-    hand.dataset.hand = which;
-    const fingers = document.createElement('div');
-    fingers.className = 'cue__fingers';
-    const slots = which === 'l' ? LEFT_SLOTS : RIGHT_SLOTS;
-    for (const cls of slots) {
-      const f = document.createElement('span');
-      f.className = `cue__finger ${cls}`;
-      fingers.appendChild(f);
-    }
-    const palm = document.createElement('div');
-    palm.className = 'cue__palm';
-    hand.append(fingers, palm);
-    return hand;
-  };
-  const left = mkHand('l');
-  const right = mkHand('r');
-  const label = document.createElement('div');
-  label.className = 'cue__hlabel';
-  el.append(left, right, label);
+  // The HTML parser handles inline <svg> foreign content correctly.
+  el.innerHTML = `<div class="cue__handrow">${handSVG('l')}${handSVG('r')}</div><div class="cue__hlabel"></div>`;
+  const label = el.querySelector<HTMLElement>('.cue__hlabel')!;
 
   const raise = (finger: Finger, color: string): void => {
-    for (const f of el.querySelectorAll<HTMLElement>('.cue__finger')) {
+    for (const f of el.querySelectorAll<SVGRectElement>('.cf')) {
       f.classList.remove('up');
-      f.style.removeProperty('--hl');
+      f.style.removeProperty('fill');
     }
     const { hand, slot } = HAND_SLOT[finger];
-    const handEl = hand === 'l' ? left : right;
-    const target = handEl.querySelectorAll<HTMLElement>('.cue__finger')[slot];
+    const target = el.querySelector<SVGRectElement>(`.cue__handsvg[data-hand="${hand}"] .cf[data-slot="${slot}"]`);
     if (target) {
       target.classList.add('up');
-      target.style.setProperty('--hl', color);
+      target.style.fill = color;
     }
     label.textContent = FINGER_LABEL[finger];
     label.style.color = color;

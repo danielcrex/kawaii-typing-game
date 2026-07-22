@@ -1,16 +1,208 @@
 /**
- * Audio (PROJECT.md §9).
+ * Audio (PROJECT.md §9) — SFX SYNTHESIZED via WebAudio (no binary assets), plus
+ * a gentle ambient music pad. Short, soft-attack, never annoying on repeat.
  *
- * SFX are SYNTHESIZED via WebAudio and played through Howler (no binary SFX
- * files — approved). Music uses a few small CC0 beds, one per phase group,
- * ducked under SFX. Global mute + volume in settings; short, soft-attack,
- * never annoying on repeat.
- *
- * Cues: per-letter tick (pitch rises as the prefix fills), soft "nope" on wrong
- * key, sparkle on clear, ascending combo chimes at milestones, gentle "aww" on
- * heart loss / twinkle on regain, short fanfare on complete, kind tone on
- * game-over.
- *
- * SCAFFOLD STATE: stub — implemented in §12 step 7.
+ * Design notes:
+ *  - The AudioContext is created lazily on the first sound (which follows a user
+ *    gesture — a keystroke or tap — so autoplay policies are satisfied).
+ *  - Everything runs through a master gain (volume × !muted). Music runs on its
+ *    own bus that DUCKS briefly whenever an SFX plays (§9).
+ *  - Per-keystroke sound is deliberately OFF by default and very subtle when on —
+ *    a tick on every key gets grating on repeat.
+ *  - Prefs (muted / volume / music / key-clicks) persist via storage/progress.
  */
-export {};
+import { loadAudioPrefs, saveAudioPrefs, type AudioPrefs } from '../storage/progress';
+
+let ctx: AudioContext | null = null;
+let master: GainNode | null = null;
+let musicBus: GainNode | null = null;
+let musicNodes: { osc: OscillatorNode; gain: GainNode }[] = [];
+let prefs: AudioPrefs = loadAudioPrefs();
+
+/** Base music-bus level (kept low; ducking dips below it). */
+const MUSIC_LEVEL = 0.06;
+
+/** Lazily create the audio graph on first use (post user-gesture). */
+function ensure(): AudioContext | null {
+  if (ctx) return ctx;
+  try {
+    const AC = window.AudioContext ?? (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+    ctx = new AC();
+    master = ctx.createGain();
+    master.gain.value = prefs.muted ? 0 : prefs.volume;
+    master.connect(ctx.destination);
+    musicBus = ctx.createGain();
+    musicBus.gain.value = prefs.music ? MUSIC_LEVEL : 0;
+    musicBus.connect(master);
+  } catch {
+    ctx = null; // WebAudio unavailable — the game stays silent, never crashes
+  }
+  return ctx;
+}
+
+/** One enveloped oscillator note; `glideTo` bends the pitch over the note. */
+function note(
+  freq: number,
+  dur: number,
+  opts: { type?: OscillatorType; gain?: number; attack?: number; glideTo?: number; delay?: number } = {},
+): void {
+  const c = ensure();
+  if (!c || !master) return;
+  const t0 = c.currentTime + (opts.delay ?? 0);
+  const osc = c.createOscillator();
+  const g = c.createGain();
+  osc.type = opts.type ?? 'sine';
+  osc.frequency.setValueAtTime(freq, t0);
+  if (opts.glideTo) osc.frequency.exponentialRampToValueAtTime(Math.max(1, opts.glideTo), t0 + dur);
+  const peak = opts.gain ?? 0.2;
+  const atk = opts.attack ?? 0.006;
+  g.gain.setValueAtTime(0.0001, t0);
+  g.gain.exponentialRampToValueAtTime(peak, t0 + atk);
+  g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+  osc.connect(g).connect(master);
+  osc.start(t0);
+  osc.stop(t0 + dur + 0.02);
+}
+
+/** Briefly duck the music bus so an SFX reads clearly (§9). */
+function duck(): void {
+  const c = ensure();
+  if (!c || !musicBus || !prefs.music) return;
+  const now = c.currentTime;
+  const base = MUSIC_LEVEL;
+  musicBus.gain.cancelScheduledValues(now);
+  musicBus.gain.setValueAtTime(musicBus.gain.value, now);
+  musicBus.gain.linearRampToValueAtTime(base * 0.28, now + 0.03);
+  musicBus.gain.linearRampToValueAtTime(base, now + 0.45);
+}
+
+/** Play an SFX (ducking the music under it). A no-op while muted. */
+function sfx(fn: () => void): void {
+  if (prefs.muted) return;
+  if (!ensure()) return;
+  duck();
+  fn();
+}
+
+// ---------- The §9 sound set ----------
+export const Sound = {
+  /** Satisfying pop on a correct tile clear — a bright pluck + a sparkle tail. */
+  clearPop(): void {
+    sfx(() => {
+      note(660, 0.13, { type: 'triangle', gain: 0.22, glideTo: 990 });
+      note(1320, 0.16, { type: 'sine', gain: 0.09, delay: 0.02 });
+    });
+  },
+  /** Soft, non-punishing "nope" on a wrong key. */
+  wrong(): void {
+    sfx(() => note(190, 0.09, { type: 'sine', gain: 0.09, glideTo: 150 }));
+  },
+  /** Very subtle per-keystroke tick — only if the pref is on. */
+  keyTick(): void {
+    if (!prefs.keyClicks) return;
+    sfx(() => note(520, 0.028, { type: 'sine', gain: 0.05 }));
+  },
+  /** Ascending combo chime at a streak milestone (5/10/15…); higher = brighter. */
+  streak(milestone: number): void {
+    sfx(() => {
+      const steps = Math.min(4, 2 + Math.floor(milestone / 5));
+      const scale = [523, 659, 784, 1046, 1319];
+      for (let i = 0; i < steps; i++) note(scale[i] ?? 1319, 0.12, { type: 'triangle', gain: 0.16, delay: i * 0.06 });
+    });
+  },
+  /** Gentle "aww" on a lost heart. */
+  heartLost(): void {
+    sfx(() => note(520, 0.26, { type: 'sine', gain: 0.16, glideTo: 330 }));
+  },
+  /** Soft twinkle on a regained heart. */
+  heartRegain(): void {
+    sfx(() => {
+      note(660, 0.1, { type: 'sine', gain: 0.12 });
+      note(990, 0.12, { type: 'sine', gain: 0.1, delay: 0.06 });
+    });
+  },
+  /** Short bright fanfare on level complete. */
+  levelComplete(): void {
+    sfx(() => {
+      const arp = [523, 659, 784, 1046];
+      arp.forEach((f, i) => note(f, 0.28, { type: 'triangle', gain: 0.2, delay: i * 0.09 }));
+      note(1568, 0.4, { type: 'sine', gain: 0.12, delay: 0.36 });
+    });
+  },
+  /** Soft, kind, non-defeating tone on game over. */
+  gameOver(): void {
+    sfx(() => {
+      [440, 349, 294].forEach((f, i) => note(f, 0.34, { type: 'sine', gain: 0.16, delay: i * 0.14 }));
+    });
+  },
+  /** Tiny soft click for menu/button taps. */
+  menuTap(): void {
+    sfx(() => note(880, 0.03, { type: 'sine', gain: 0.07 }));
+  },
+
+  // ---------- Music (gentle ambient pad, ducked under SFX) ----------
+  /** Start/refresh the pad for a phase group (0-based), transposing the chord. */
+  music(phaseIndex: number): void {
+    const c = ensure();
+    if (!c || !musicBus) return;
+    this.stopMusic();
+    if (!prefs.music) return;
+    // A soft major-ninth pad; root rises a little per phase group.
+    const root = 130.81 * Math.pow(2, (phaseIndex % 6) / 12); // C3 up by phase
+    const chord = [root, root * 1.25, root * 1.5, root * 2.25];
+    for (const f of chord) {
+      const osc = c.createOscillator();
+      const g = c.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = f * (1 + (Math.random() - 0.5) * 0.004); // faint detune for warmth
+      g.gain.value = 0.25;
+      osc.connect(g).connect(musicBus);
+      osc.start();
+      musicNodes.push({ osc, gain: g });
+    }
+  },
+  stopMusic(): void {
+    for (const n of musicNodes) {
+      try {
+        n.osc.stop();
+      } catch {
+        /* already stopped */
+      }
+    }
+    musicNodes = [];
+  },
+
+  // ---------- Settings ----------
+  isMuted(): boolean {
+    return prefs.muted;
+  },
+  getVolume(): number {
+    return prefs.volume;
+  },
+  musicOn(): boolean {
+    return prefs.music;
+  },
+  keyClicksOn(): boolean {
+    return prefs.keyClicks;
+  },
+  setMuted(m: boolean): void {
+    prefs = { ...prefs, muted: m };
+    saveAudioPrefs(prefs);
+    if (master && ctx) master.gain.setTargetAtTime(m ? 0 : prefs.volume, ctx.currentTime, 0.02);
+  },
+  setVolume(v: number): void {
+    prefs = { ...prefs, volume: Math.min(1, Math.max(0, v)) };
+    saveAudioPrefs(prefs);
+    if (master && ctx && !prefs.muted) master.gain.setTargetAtTime(prefs.volume, ctx.currentTime, 0.02);
+  },
+  setMusic(on: boolean): void {
+    prefs = { ...prefs, music: on };
+    saveAudioPrefs(prefs);
+    if (musicBus && ctx) musicBus.gain.setTargetAtTime(on ? MUSIC_LEVEL : 0, ctx.currentTime, 0.05);
+    if (!on) this.stopMusic();
+  },
+  setKeyClicks(on: boolean): void {
+    prefs = { ...prefs, keyClicks: on };
+    saveAudioPrefs(prefs);
+  },
+};

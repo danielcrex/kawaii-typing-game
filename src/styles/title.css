@@ -103,3 +103,19 @@
   font-size: var(--fs-body);
   color: var(--tile-ink);
 }
+
+/* Settings gear — top-right of the title header (§9 / fix #5). */
+.title__header { position: relative; }
+.title__settings {
+  position: absolute;
+  top: 0;
+  right: var(--space-2);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: var(--radius-pill);
+  padding: 4px 10px;
+  font-size: 1.1rem;
+  box-shadow: var(--shadow-sm);
+  transition: transform var(--dur-fast) var(--ease-out);
+}
+.title__settings:hover { transform: rotate(20deg); }

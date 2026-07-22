@@ -267,6 +267,14 @@ guide must read the key order from here, never hardcode its own.
 - **(c) De-drill early** — pure single-key drill is confined to L1–2; real short words mix in
   the instant ≥3 keys + a vowel unlock (L3). No long stretches of pure key-repetition.
 
+> **Future option (NOT built — recorded for later):** a **finger-cumulative** spine as an
+> alternative to the current row-based order — introduce keys by finger, cumulatively (L1 index
+> fingers only, L2 +middle, L3 +ring, L4 +pinky, …), so each level adds a finger rather than a
+> keyboard row. This maps more directly onto the finger-discipline the guide teaches. The
+> working row-based spine (home → top → bottom → Shift → punctuation) stays in place for now;
+> switching would be a `data/curriculum.ts` change (its single source feeds the sampler AND the
+> keyboard guide, so both would follow automatically).
+
 ### 6.1 Phases (adaptive bounds — speed/pressure only)
 
 | Phase | Levels | Keys introduced (see `curriculum.ts`) | speedMin→Max (px/s) | spawnMin→Max (s) | concMin→Max |

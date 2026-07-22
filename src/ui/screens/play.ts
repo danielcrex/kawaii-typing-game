@@ -30,6 +30,7 @@ import { Session, type SessionSnapshot } from '../../game/session';
 import { createKeyboardGuide } from '../../render/keyboardGuide';
 import { createTileCue, type CueRect } from '../../render/tileCue';
 import { CONFIDENT_ENTRY_LEVEL } from '../../data/curriculum';
+import { Sound } from '../../audio/sound';
 import { createHeartsView } from '../../render/hud';
 import { initHearts, accrueRegen, loseHeart, regenFraction } from '../../game/hearts';
 import type { Scene, SceneFactory, SceneNavigator } from '../scenes';
@@ -87,7 +88,10 @@ export function createPlay(level: number, options: PlayOptions = {}): SceneFacto
     const hint = root.querySelector<HTMLElement>('[data-hint]')!;
     const guideToggle = root.querySelector<HTMLButtonElement>('[data-guide-toggle]')!;
 
-    back.addEventListener('click', () => nav.go(createTitle));
+    back.addEventListener('click', () => {
+      Sound.menuTap();
+      nav.go(createTitle);
+    });
 
     const heartsView = createHeartsView();
     heartsMount.appendChild(heartsView.el);
@@ -104,6 +108,7 @@ export function createPlay(level: number, options: PlayOptions = {}): SceneFacto
     let session: Session | null = null;
     let detachKeys: (() => void) | null = null;
     let ended = false; // guard so we transition off the play scene only once
+    let prevSnap: SessionSnapshot | null = null; // for diffing audio moments (§9)
 
     // Starting intensity (§5.1 decisions 2 & 3):
     //  - Resume the phase's settled intensity if we have one; otherwise COLD start
@@ -149,6 +154,20 @@ export function createPlay(level: number, options: PlayOptions = {}): SceneFacto
             wpmOut.textContent = String(Math.round(snap.wpm));
             intensityFill.style.width = `${Math.round(snap.intensity * 100)}%`;
             heartsView.update(snap.hearts, snap.regen);
+
+            // Audio moments (§9), detected by diffing successive snapshots so the
+            // Session stays audio-agnostic:
+            if (prevSnap) {
+              if (snap.cleared > prevSnap.cleared) {
+                Sound.clearPop();
+                // Streak milestones (5/10/15…) get an ascending chime on top.
+                if (snap.streak > 0 && snap.streak % 5 === 0) Sound.streak(snap.streak);
+              }
+              if (snap.hearts < prevSnap.hearts) Sound.heartLost();
+              else if (snap.hearts > prevSnap.hearts) Sound.heartRegain();
+            }
+            prevSnap = snap;
+
             if (snap.state === 'over' && !ended) {
               ended = true;
               // Defer off the current update() call to avoid tearing the scene
@@ -186,8 +205,18 @@ export function createPlay(level: number, options: PlayOptions = {}): SceneFacto
         // Reserve the keyboard band so the cue never places itself under the keys.
         const safeBottom = keyboard.el.offsetHeight + 18;
 
-        // Real typing: route keystrokes into the session (no submit key).
-        detachKeys = attachKeyRouter((char) => session?.handleKey(char));
+        // Gentle ambient music for this phase group (§9), ducked under SFX.
+        Sound.music('ABCDEF'.indexOf(phase.id));
+
+        // Real typing: route keystrokes into the session (no submit key). The
+        // per-keystroke tick is very subtle and OFF by default (§9).
+        detachKeys = attachKeyRouter((char) => {
+          const correct = session?.handleKey(char);
+          // Soft, non-punishing "nope" on a wrong key; a very subtle tick on a
+          // correct one (the tick is off by default, §9).
+          if (correct === false) Sound.wrong();
+          else if (correct) Sound.keyTick();
+        });
 
         loop = startLoop({
           update: (dt) => session?.update(dt),
@@ -260,6 +289,7 @@ export function createPlay(level: number, options: PlayOptions = {}): SceneFacto
       unmount() {
         detachKeys?.();
         loop?.stop();
+        Sound.stopMusic();
         keyboard.destroy();
         tileCue.destroy();
         session?.dispose();

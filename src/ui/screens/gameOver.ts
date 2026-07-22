@@ -14,6 +14,7 @@
  * is in the difficulty source createPlay injects.
  */
 import '../../styles/endcard.css';
+import { Sound } from '../../audio/sound';
 import { getMascot, mascotFallbackColor } from '../../data/mascots';
 import type { Scene, SceneFactory, SceneNavigator } from '../scenes';
 import { createPlay } from './play';
@@ -60,17 +61,23 @@ export function createGameOver(level: number): SceneFactory {
     retry.textContent = 'Try again?';
     // Retry resumes at REDUCED intensity (createPlay reads the persisted phase
     // intensity and applies the retry factor) — never the wall that just killed her.
-    retry.addEventListener('click', () => nav.go(createPlay(level, { retry: true })));
+    retry.addEventListener('click', () => {
+      Sound.menuTap();
+      nav.go(createPlay(level, { retry: true }));
+    });
 
     const home = document.createElement('button');
     home.className = 'endcard__btn';
     home.type = 'button';
     home.textContent = '← Friends';
-    home.addEventListener('click', () => nav.go(createTitle));
+    home.addEventListener('click', () => {
+      Sound.menuTap();
+      nav.go(createTitle);
+    });
 
     actions.append(retry, home);
     card.appendChild(actions);
 
-    return { id: `gameover-${level}`, root };
+    return { id: `gameover-${level}`, root, mounted() { Sound.gameOver(); } };
   };
 }

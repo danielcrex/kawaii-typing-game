@@ -142,8 +142,8 @@ export class Session {
    * this is the denominator step 5's adaptive controller reads, so it must be
    * exactly right.
    */
-  handleKey(char: string): void {
-    if (this.state !== 'playing') return;
+  handleKey(char: string): boolean {
+    if (this.state !== 'playing') return false;
 
     const outcome = this.matcher.feed(char, this.matchSnapshot());
 
@@ -182,6 +182,7 @@ export class Session {
     }
 
     this.emit();
+    return outcome.correct; // lets the caller play the soft wrong-key tick (§9)
   }
 
   /**
@@ -194,8 +195,13 @@ export class Session {
 
     const { fallSpeed, spawnInterval, maxConcurrent } = this.opts.difficulty.params;
 
-    // Spawn scheduling — only while we still have tiles left to introduce.
-    if (this.spawnedTotal < TILE_TARGET) {
+    // Spawn scheduling. Completion is measured in tiles CLEARED, not spawned, so
+    // we keep feeding tiles until enough are cleared-or-in-flight to reach the
+    // target — a miss (escape) reopens this gate for a replacement, so a missed
+    // tile can never dead-end the level (the only fail is hearts→0). We still
+    // never flood: `shouldSpawn` caps at maxConcurrent + the spawn interval, and
+    // this gate stops once cleared + live already covers the target.
+    if (this.cleared + this.liveCount() < TILE_TARGET) {
       if (this.spawner.shouldSpawn(dt, spawnInterval, this.liveCount(), maxConcurrent)) {
         this.spawnTile();
       }
