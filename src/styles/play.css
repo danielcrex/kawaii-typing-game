@@ -349,3 +349,17 @@
     transition: opacity var(--dur-base) var(--ease-out);
   }
 }
+
+/* Keyboard-guide toggle (§5.4) — a quiet keyboard icon in the HUD. */
+.play__guide-toggle {
+  border: 1px solid var(--hair, rgba(42, 26, 46, 0.12));
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: var(--radius-pill);
+  padding: 2px 8px;
+  font-size: 1rem;
+  line-height: 1.4;
+  box-shadow: var(--shadow-sm);
+  transition: transform var(--dur-fast) var(--ease-out), opacity var(--dur-fast) var(--ease-out);
+}
+.play__guide-toggle:hover { transform: translateY(-1px); }
+.play__guide-toggle.is-off { opacity: 0.45; filter: grayscale(1); }

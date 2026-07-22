@@ -196,18 +196,44 @@ No submit key. She just types.
   cannot revive from 0 (game-over is terminal for that attempt).
 - **Win:** clearing the level's tile target (20) → level-complete scene.
 
-### 5.4 Keyboard guide & finger discipline (`render/keyboardGuide.ts`, `data/fingerMap.ts`)
+### 5.4 Keyboard guide & finger discipline (`render/keyboardGuide.ts`, `render/tileCue.ts`, `data/fingerMap.ts`)
 
-- Full on-screen QWERTY, keys grouped/colored by the standard 8-finger + thumb scheme
-  (left pinky … left index / right index … right pinky; space = thumbs). Home-row keys
-  (A S D F J K L ;) marked with the usual bump/indicator.
-- **Next-key highlight:** the key for the next character glows in its finger's color, with a
-  subtle label of which finger to use.
-- **Auto-fade:** guide opacity decreases as rolling accuracy for recently-used keys rises
-  (she's internalized them); a toggle (keyboard icon) pins it on/off. Default on for phase A,
-  fading thereafter.
-- Correct keypress animates the matching on-screen key (press-down + finger-color flash);
-  wrong key flashes the *correct* key softly.
+**Reframed objective — "eyes on screen."** The guide's job is not just "help find keys" — it
+is to make the screen the only place she needs to look. So the "which finger" cue lives **on
+the tile her eyes already follow** (`render/tileCue.ts`), not only on the keyboard graphic at
+the bottom. A cue only at the bottom recreates the look-down habit at a new spot.
+
+**One finger-map, one key order.** `data/fingerMap.ts` (key → finger, label, colour) and
+`data/curriculum.ts` (key order) are the single sources; the tile cue AND the keyboard consume
+them — computed once, never duplicated.
+
+- **On-screen keyboard** (`keyboardGuide.ts`): full QWERTY coloured by the 8-finger + thumb
+  scheme (space = thumb), F/J home bumps, keys not-yet-taught (per curriculum) dimmed. It is
+  the **always-on floor**: even when the tile cue is suppressed, the keyboard glows the next
+  key. The **next key glows in its finger's colour**.
+- **Eyes-up tile cue** (`tileCue.ts`), richness tied to the on-ramp tier:
+  - beginner ("just starting") → a **whole-hand diagram** with the correct finger raised in its
+    colour (concrete/spatial for a 5yo);
+  - confident ("I know my letters") → a **minimal finger-colour pip + short label**.
+- **Cue placement — one "best free position" rule** covering all extremes: the cue picks the
+  first of {right, left, above, below} the tile that is fully in-field (excluding the keyboard
+  zone) AND clear of every other tile. So a near-escape tile lifts the cue **above**, a wall
+  flips it to the **other side (keeping the hand)**, and a tile stacked above is simply not
+  chosen. Moves **ease to a settle** (no teleport; instant under reduced-motion). Only if no
+  anchor fits at all (dense crowd) does a beginner's hand degrade to the pip — never merely for
+  being at a wall.
+- **Single rich cue:** only the active (locked) tile — or, if none locked, the nearest-to-bottom
+  (most urgent) tile — carries a cue, so cues never collide or cover another word.
+- **Auto-fade — ACCURACY ONLY** (`game/keyStats.ts`): each key's cue (keyboard glow + tile cue
+  opacity) fades as her **per-key accuracy** rises. Reaction-time is **deliberately excluded**
+  and must not be re-added: a child who *looks at her hands* types fast **and** accurate, so a
+  speed term reads the look-down habit as mastery and would fade the guide exactly when she is
+  most dependent on looking down — it rewards the very habit the guide exists to kill. Accuracy
+  alone can't be gamed that way.
+- **Toggle** (keyboard icon in the HUD) pins the whole guide on/off, persisted. Default **on**
+  (load-bearing for the youngest: find-the-glowing-key).
+- Reduced motion: glows and the raised finger are static (no pulse); the toggle is
+  keyboard-focusable.
 
 ---
 

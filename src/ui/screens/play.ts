@@ -17,10 +17,19 @@ import {
   COLD_START_INTENSITY,
   RETRY_FACTOR,
 } from '../../engine/difficulty';
-import { loadPhaseIntensity, savePhaseIntensity } from '../../storage/progress';
+import {
+  loadPhaseIntensity,
+  savePhaseIntensity,
+  loadOnboarding,
+  loadGuideOn,
+  saveGuideOn,
+} from '../../storage/progress';
 import { startLoop, type LoopHandle } from '../../engine/loop';
 import { attachKeyRouter } from '../../input/keyRouter';
 import { Session, type SessionSnapshot } from '../../game/session';
+import { createKeyboardGuide } from '../../render/keyboardGuide';
+import { createTileCue, type CueRect } from '../../render/tileCue';
+import { CONFIDENT_ENTRY_LEVEL } from '../../data/curriculum';
 import { createHeartsView } from '../../render/hud';
 import { initHearts, accrueRegen, loseHeart, regenFraction } from '../../game/hearts';
 import type { Scene, SceneFactory, SceneNavigator } from '../scenes';
@@ -56,6 +65,7 @@ export function createPlay(level: number, options: PlayOptions = {}): SceneFacto
           <span class="play__stat instrument" title="Words per minute"><span data-wpm>0</span> wpm</span>
           <span class="play__stat instrument" title="Accuracy">🎯 <span data-acc>100</span>%</span>
           <span class="play__stat instrument"><span data-cleared>0</span> / 20</span>
+          <button class="play__guide-toggle" type="button" data-guide-toggle title="Show/hide the keyboard guide" aria-pressed="true">⌨️</button>
         </div>
       </header>
       <div class="play__field" aria-label="Falling tiles"></div>
@@ -75,11 +85,20 @@ export function createPlay(level: number, options: PlayOptions = {}): SceneFacto
     const intensityFill = root.querySelector<HTMLSpanElement>('[data-intensity]')!;
     const heartsMount = root.querySelector<HTMLSpanElement>('[data-hearts]')!;
     const hint = root.querySelector<HTMLElement>('[data-hint]')!;
+    const guideToggle = root.querySelector<HTMLButtonElement>('[data-guide-toggle]')!;
 
     back.addEventListener('click', () => nav.go(createTitle));
 
     const heartsView = createHeartsView();
     heartsMount.appendChild(heartsView.el);
+
+    // Keyboard-guide tier from the on-ramp pick (§5.4): a letter-confident kid
+    // gets the minimal pip; a beginner gets the concrete whole-hand.
+    const entryLevel = loadOnboarding()?.entryLevel ?? 1;
+    const guideTier = entryLevel >= CONFIDENT_ENTRY_LEVEL ? 'confident' : 'beginner';
+    const keyboard = createKeyboardGuide(level);
+    const tileCue = createTileCue(guideTier);
+    let guideOn = loadGuideOn();
 
     let loop: LoopHandle | null = null;
     let session: Session | null = null;
@@ -148,13 +167,74 @@ export function createPlay(level: number, options: PlayOptions = {}): SceneFacto
 
         session.start();
 
+        // Mount the keyboard guide + eyes-up cue into the field, and apply the
+        // persisted toggle. The guide consumes curriculum + fingerMap; the cue
+        // tracks the active tile each render frame (§5.4).
+        field.append(keyboard.el, tileCue.el);
+        const applyGuideVisibility = (): void => {
+          keyboard.setVisible(guideOn);
+          tileCue.el.classList.toggle('cue--hidden', !guideOn);
+          guideToggle.setAttribute('aria-pressed', String(guideOn));
+          guideToggle.classList.toggle('is-off', !guideOn);
+        };
+        applyGuideVisibility();
+        guideToggle.addEventListener('click', () => {
+          guideOn = !guideOn;
+          saveGuideOn(guideOn);
+          applyGuideVisibility();
+        });
+        // Reserve the keyboard band so the cue never places itself under the keys.
+        const safeBottom = keyboard.el.offsetHeight + 18;
+
         // Real typing: route keystrokes into the session (no submit key).
         detachKeys = attachKeyRouter((char) => session?.handleKey(char));
 
         loop = startLoop({
           update: (dt) => session?.update(dt),
-          render: (alpha) => session?.render(alpha),
+          render: (alpha) => {
+            session?.render(alpha);
+            updateGuide();
+          },
         });
+
+        /**
+         * Point the guide at the active tile using its LIVE rendered rect (read
+         * from the DOM so the cue tracks the interpolated fall smoothly), fade by
+         * per-key mastery, and glow the next key on the keyboard (the always-on
+         * floor). Runs every render frame.
+         */
+        function updateGuide(): void {
+          if (!session || !guideOn) {
+            tileCue.el.classList.add('cue--hidden');
+            keyboard.setNextKey(null, 1);
+            return;
+          }
+          keyboard.refreshFade((c) => session!.keyMastery(c));
+          const info = session.guideInfo();
+          if (!info || !info.nextChar) {
+            tileCue.update(null, { w: 0, h: 0, safeBottom });
+            keyboard.setNextKey(null, 1);
+            return;
+          }
+          // Mastered keys fade (accuracy-only); floor at 0.15 so never invisible.
+          const fade = Math.max(0.15, 1 - 0.85 * session.keyMastery(info.nextChar));
+          keyboard.setNextKey(info.nextChar, fade);
+
+          const fieldRect = field.getBoundingClientRect();
+          const toLocal = (el: HTMLElement): CueRect => {
+            const r = el.getBoundingClientRect();
+            return { x: r.left - fieldRect.left, y: r.top - fieldRect.top, w: r.width, h: r.height };
+          };
+          tileCue.update(
+            {
+              rect: toLocal(info.el),
+              others: info.others.map(toLocal),
+              nextChar: info.nextChar,
+              fade,
+            },
+            { w: fieldRect.width, h: fieldRect.height, safeBottom },
+          );
+        }
 
         // DEV-only: expose the session + headless constructors so the simulation
         // can be stepped/inspected without relying on rAF (which pauses when the
@@ -171,6 +251,8 @@ export function createPlay(level: number, options: PlayOptions = {}): SceneFacto
               hearts: { initHearts, accrueRegen, loseHeart, regenFraction },
               storage: { loadPhaseIntensity, savePhaseIntensity },
               createWordSampler,
+              createTileCue,
+              createKeyboardGuide,
             },
           };
         }
@@ -178,6 +260,8 @@ export function createPlay(level: number, options: PlayOptions = {}): SceneFacto
       unmount() {
         detachKeys?.();
         loop?.stop();
+        keyboard.destroy();
+        tileCue.destroy();
         session?.dispose();
         // Persist the settled intensity for THIS phase so the next level/session
         // resumes near where she left off (§5.1). On a game-over unmount this

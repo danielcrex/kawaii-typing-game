@@ -19,8 +19,19 @@ import type { DifficultySource } from '../engine/difficulty';
 import { Matcher, type MatchTarget } from '../input/matcher';
 import { initScore, accuracyOf, type ScoreState } from './scoring';
 import { initHearts, accrueRegen, loseHeart, regenFraction, type HeartsState } from './hearts';
+import { createKeyStats, type KeyStats } from './keyStats';
 import { createTile, type TileView } from '../render/tiles';
 import { TILE_TARGET } from '../data/levels';
+
+/** What the keyboard guide needs about the tile she's on / about to type (§5.4). */
+export interface GuideInfo {
+  /** The active tile's DOM element (for its live rendered rect). */
+  el: HTMLElement;
+  /** The next character she should type on that tile. */
+  nextChar: string;
+  /** Other live tiles' elements (so the cue can avoid overlapping them). */
+  others: HTMLElement[];
+}
 
 export type SessionState = 'intro' | 'playing' | 'won' | 'over';
 
@@ -100,6 +111,7 @@ export class Session {
   private readonly tiles: TileModel[] = [];
   private score: ScoreState = initScore();
   private hearts: HeartsState = initHearts();
+  private readonly keyStats: KeyStats = createKeyStats();
   private cleared = 0;
   private spawnedTotal = 0;
   private nextId = 1;
@@ -117,6 +129,7 @@ export class Session {
     this.hearts = initHearts();
     this.startTime = performance.now();
     this.matcher.reset();
+    this.keyStats.reset();
     this.spawner.reset();
     this.spawnTile();
     this.emit();
@@ -145,17 +158,21 @@ export class Session {
         switch (outcome.kind) {
           case 'acquired':
           case 'advance':
+            this.keyStats.record(char, true); // per-key mastery for the guide fade (§5.4)
             tile.cursor = outcome.cursor;
             tile.view.fillTo(tile.cursor / tile.word.length);
             tile.view.bump(); // tiny per-keystroke delight on the just-filled tile (§5)
             break;
           case 'clear':
+            this.keyStats.record(char, true);
             tile.cursor = outcome.cursor;
             tile.view.fillTo(1);
             this.clearTile(tile.id);
             break;
           case 'wrong':
             // Forgiving: a tiny shake, no heart, no fail, cursor unchanged (§5.2).
+            // Record a miss against the key she SHOULD have pressed (accuracy-only).
+            this.keyStats.record(tile.word[tile.cursor] ?? char, false);
             tile.view.shake();
             break;
           case 'no-match':
@@ -353,6 +370,32 @@ export class Session {
     const i = this.tiles.indexOf(tile);
     if (i >= 0) this.tiles.splice(i, 1);
     this.emit();
+  }
+
+  /**
+   * The tile the keyboard guide should point at, or null when nothing is in
+   * play. It's the locked tile if she's mid-word, else the nearest-to-bottom
+   * (most urgent) tile — matching the matcher's auto-target priority (§5.2), so
+   * the cue anticipates the tile her next keystroke would grab.
+   */
+  guideInfo(): GuideInfo | null {
+    if (this.state !== 'playing') return null;
+    const live = this.tiles.filter((t) => !t.removing);
+    if (live.length === 0) return null;
+    let active = this.matcher.lockedId !== null ? live.find((t) => t.id === this.matcher.lockedId) : undefined;
+    if (!active) {
+      active = live.reduce((a, b) => (b.y + b.height > a.y + a.height ? b : a));
+    }
+    return {
+      el: active.view.el,
+      nextChar: active.word[active.cursor] ?? '',
+      others: live.filter((t) => t !== active).map((t) => t.view.el),
+    };
+  }
+
+  /** Per-key mastery 0..1 for the guide's accuracy-only auto-fade (§5.4). */
+  keyMastery(char: string): number {
+    return this.keyStats.mastery(char);
   }
 
   /** Current progress snapshot (public so the HUD and tests can read it). */
