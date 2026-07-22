@@ -147,6 +147,7 @@ export class Session {
           case 'advance':
             tile.cursor = outcome.cursor;
             tile.view.fillTo(tile.cursor / tile.word.length);
+            tile.view.bump(); // tiny per-keystroke delight on the just-filled tile (§5)
             break;
           case 'clear':
             tile.cursor = outcome.cursor;
@@ -293,6 +294,11 @@ export class Session {
     if (this.score.streak > this.score.bestStreak) this.score.bestStreak = this.score.streak;
     this.hearts = accrueRegen(this.hearts);
 
+    // Points: a base per clear plus a gentle streak bonus. Surfaced as the
+    // floating "+N" delight on the tile (§5); also accumulates the run score.
+    const gained = 10 + Math.max(0, this.score.streak - 1) * 2;
+    this.score.score += gained;
+
     // Feed the adaptive controller: a clear with lots of spare height (high
     // margin) says "she has room — you can push"; a last-second clear says the
     // opposite. The rolling window smooths it (§5.1).
@@ -303,7 +309,7 @@ export class Session {
       wpm: this.currentWpm(),
     });
 
-    void tile.view.clear().then(() => this.finalizeRemoval(tile));
+    void tile.view.clear(gained).then(() => this.finalizeRemoval(tile));
 
     if (this.cleared >= TILE_TARGET) {
       this.state = 'won'; // real level-complete scene arrives in step 8

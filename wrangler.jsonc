@@ -5,6 +5,12 @@
   "observability": {
     "enabled": true
   },
+  // Explicit, version-controlled build: wrangler runs this before deploy so the
+  // static site is (re)built into ./dist. Source of truth for the build lives
+  // HERE, not only in dashboard state that can silently drift.
+  "build": {
+    "command": "npm run build"
+  },
   "assets": {
     "directory": "./dist"
   },

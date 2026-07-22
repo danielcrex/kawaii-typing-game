@@ -32,6 +32,11 @@ for her confidence first.
   are *forgiving* — a wrong key never costs a heart; it just doesn't advance the word.
 - **Break from the "Daniele's Touch" pro design system.** This game gets its own
   kid-appropriate identity (defined in §7).
+- **Age range 5–10 on ONE curriculum spine.** The content must not overwhelm a 5yo beginner
+  nor bore a 10yo. The adaptive engine only tunes *speed/pressure* — it does NOT make content
+  age-appropriate. Serve the range via the three levers in §6 (starting-point pick, widened
+  adaptive band, de-drilled early levels), never a content fork. One key-progression spine for
+  all ages.
 
 ---
 
@@ -208,56 +213,87 @@ No submit key. She just types.
 
 ## 6. Levels & content
 
-24 levels, one mascot each, grouped into 6 content **phases**. Speed/spawn/tile-count are
-**not** hard-coded per level anymore — they're the adaptive bounds below. Only *content*
-changes per level, so difficulty is decoupled.
+24 levels, one mascot each, grouped into 6 speed **phases**. Speed/spawn/tile-count are
+**not** hard-coded per level — they're the adaptive bounds below.
 
-### 6.1 Phases (adaptive bounds)
+**Content model = KEY PROGRESSION, not word length.** Touch typing is taught by unlocking
+keys, not by ramping word length. The single source of truth is **`data/curriculum.ts`**:
+each level unlocks 1–3 new keys (home row → top row → bottom row → Shift/capitals →
+punctuation; space enters with phrases at L10), and every word/phrase is drawn ONLY from keys
+unlocked so far. All 26 letters are unlocked by **L13**; L14–24 layer fluency, capitals,
+phrases and punctuation. The phases below are therefore **speed/pressure envelopes only** —
+they no longer describe *what* she types.
 
-| Phase | Levels | Content | speedMin→Max (px/s) | spawnMin→Max (s) | concMin→Max |
-|-------|--------|---------|---------------------|------------------|-------------|
-| A | 1–4   | single letters                    |  40 → 90  | 2.6 → 1.6 | 1 → 2 |
-| B | 5–8   | 3-letter words                    |  55 → 110 | 2.8 → 1.7 | 2 → 3 |
-| C | 9–12  | 4–5 letter words                  |  65 → 125 | 2.9 → 1.8 | 2 → 3 |
-| D | 13–16 | 5–6 letter words                  |  75 → 140 | 3.0 → 1.9 | 3 → 4 |
-| E | 17–20 | 6–8 letter words (+ capitals)     |  85 → 155 | 3.2 → 2.0 | 3 → 4 |
-| F | 21–24 | 8+ letter words + short phrases   |  95 → 170 | 3.4 → 2.1 | 3 → 5 |
+⚠️ **One key-order source of truth.** `data/curriculum.ts` is consumed by the word sampler
+(`data/sampler.ts`) AND — when it lands — the on-screen keyboard guide (§5.4, step 6). The
+guide must read the key order from here, never hardcode its own.
 
-`concMax` is capped at **5** everywhere — a beginner cannot track more. These are starting
-bounds; tune during playtest, but keep the *shape* (gentle, overlapping between phases).
+**Age 5–10 on ONE spine — three levers** (never a content fork; the adaptive engine only tunes
+*speed*, not age-appropriateness):
+- **(a) Starting-point pick** (`ui/screens/onboarding.ts`) — a first-run one-tap choice sets
+  the default entry level on the same spine: *"Just starting"* → L1; *"I know my letters"* →
+  **compress-traverse** to L7 (keeps the full L7→L24 finger-position progression; only skips
+  the pure home-row drills a letter-confident kid already knows). Every level stays reachable
+  via the friends grid.
+- **(b) Widen the adaptive band** — Phase-A floor lowered (`speedMin` 30, wider spawn gap) and
+  a near-zero cold-start intensity (0.1) so a 5yo copes; the fast ceiling is unchanged so a
+  10yo on the same level is still challenged. The *band*, not the level number, spans the ages.
+- **(c) De-drill early** — pure single-key drill is confined to L1–2; real short words mix in
+  the instant ≥3 keys + a vowel unlock (L3). No long stretches of pure key-repetition.
+
+### 6.1 Phases (adaptive bounds — speed/pressure only)
+
+| Phase | Levels | Keys introduced (see `curriculum.ts`) | speedMin→Max (px/s) | spawnMin→Max (s) | concMin→Max |
+|-------|--------|---------------------------------------|---------------------|------------------|-------------|
+| A | 1–4   | home row: f j · d k · s l a · g h       |  30 → 90  | 2.9 → 1.6 | 1 → 2 |
+| B | 5–8   | top row: e i · r u · t y · w o          |  55 → 110 | 2.8 → 1.7 | 2 → 3 |
+| C | 9–12  | q p · n m + space · c b · v             |  65 → 125 | 2.9 → 1.8 | 2 → 3 |
+| D | 13–16 | x z (all letters) · consolidate         |  75 → 140 | 3.0 → 1.9 | 3 → 4 |
+| E | 17–20 | Shift/capitals · phrases · longer words |  85 → 155 | 3.2 → 2.0 | 3 → 4 |
+| F | 21–24 | punctuation (. , ' ! ?) · mastery       |  95 → 170 | 3.4 → 2.1 | 3 → 5 |
+
+`concMax` is capped at **5** everywhere — a beginner cannot track more. Phase A's floor is
+deliberately gentler than the others (age lever (b)): `speedMin` 30 + wider spawn gap so a 5yo
+can cope, while the unchanged max keeps a 10yo challenged. These are starting bounds; tune
+during playtest, but keep the *shape* (gentle, overlapping between phases).
 
 ### 6.2 Level → mascot map
 
-| L | Mascot | Content focus | | L | Mascot | Content focus |
-|---|--------|---------------|---|---|--------|---------------|
-| 1 | Fly | home row A S D F J K L ; | | 13 | Capybara | 5-letter |
-| 2 | Fish | top row Q W E R T Y | | 14 | Snake | 5-letter mixed |
-| 3 | Butterfly | bottom row + common | | 15 | Crocodile | 5–6 letter |
-| 4 | Seahorse | all letters + punctuation | | 16 | Deer | common 6-letter |
-| 5 | Hamster | common 3-letter | | 17 | Tiger | 6-letter + capitals |
-| 6 | Squirrel | 3-letter, home-row bias | | 18 | Lion | 6–7 letter |
-| 7 | Owl | mixed 3-letter | | 19 | Monster | mixed + simple phrases |
-| 8 | Cat | 3-letter + repeats | | 20 | Dinosaur | 7–8 letter |
-| 9 | Otter | 4-letter | | 21 | Elephant | 7–9 letter |
-| 10 | Turtle | 4-letter common | | 22 | Human | 8+ letter |
-| 11 | Monkey | 4–5 letter | | 23 | Dragon | 8–10 letter, themed |
-| 12 | Dog | 4–5 letter | | 24 | Robot | mastery: long words + short sentences |
+New keys per level (the cumulative key-set is derived in `data/curriculum.ts`):
+
+| L | Mascot | New keys | | L | Mascot | New keys |
+|---|--------|----------|---|---|--------|----------|
+| 1 | Fly | f j *(drill)* | | 13 | Capybara | x z → **all 26 letters** |
+| 2 | Fish | d k *(drill)* | | 14 | Snake | — consolidate (longer words) |
+| 3 | Butterfly | s l a → first words | | 15 | Crocodile | — consolidate |
+| 4 | Seahorse | g h | | 16 | Deer | — consolidate |
+| 5 | Hamster | e i *(vowels)* | | 17 | Tiger | Shift → capitals |
+| 6 | Squirrel | r u | | 18 | Lion | — consolidate |
+| 7 | Owl | t y | | 19 | Monster | — longer phrases |
+| 8 | Cat | w o | | 20 | Dinosaur | — consolidate |
+| 9 | Otter | q p | | 21 | Elephant | . , |
+| 10 | Turtle | n m + space → phrases | | 22 | Human | ' (contractions) |
+| 11 | Monkey | c b | | 23 | Dragon | ! ? |
+| 12 | Dog | v | | 24 | Robot | — mastery (all mixed) |
 
 Target tiles per level: **20**.
 
-### 6.3 Word pools (`data/words.ts`)
+### 6.3 Word corpus + sampler (`data/words.ts`, `data/sampler.ts`)
 
-Generate curated, **age-appropriate (10yo), common, positive** word pools per phase under
-these constraints:
-- Match the phase's letter-length band.
-- Phase A: letters keyed to the level's row focus.
-- Prefer words with unambiguous spelling; avoid anything a 10-year-old wouldn't know.
-- Phase E/F "capitals" and "phrases": capitals mean a leading capital letter (teaches Shift);
-  phrases are 2–3 short words with a space (space bar practice). Keep phrases wholesome and
-  short (e.g. "good job", "well done", "you did it").
+A single ~400-word corpus of **common, age-5+, positive** words (Fry 300 / Dolch sight words),
+NOT split by phase. Selection is **key-gated**, computed live:
+- `wordsForLevel(L)` returns the corpus words whose letters are all unlocked through L — i.e.
+  each word first appears at the FIRST level whose key-set covers it. Never hand-assigned, so
+  it can't drift from the key order. (≥300 words are guaranteed typeable by the time all 26
+  letters unlock at L13; the corpus is ~430 for variety.)
+- **Phrases** (`PHRASES`, space-bar practice) surface from L10; **punctuation items**
+  (`PUNCT_ITEMS`, incl. contractions) from L21+; **leading capitals** are applied at draw time
+  once Shift unlocks (L17). All gated the same way (letters + required punctuation unlocked).
+- The **sampler** (`data/sampler.ts`) draws without repeating until a recent buffer clears, and
+  **weights toward the keys newly introduced at that level** (or, on consolidation levels,
+  toward longer words). On the L1–2 drill levels it emits the unlocked single letters.
 - No profanity, no scary/violent words even for Monster/Dragon/Dinosaur — theme by mascot,
-  not by menace (dragon → "sparkle", "treasure", "magical").
-- ~40–60 words per phase minimum so repetition within a level is low.
+  not by menace (dragon → "sparkle", "magic", "treasure").
 
 ---
 

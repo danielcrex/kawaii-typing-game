@@ -72,9 +72,11 @@
 .mascot-chip__art {
   width: 76px;
   height: 76px;
-  border-radius: var(--radius-md);
-  object-fit: contain;
-  background: radial-gradient(circle at 50% 35%, #fff, rgba(255, 255, 255, 0));
+  /* Uniform circular sticker medallion (fix #3b). */
+  border-radius: 50%;
+  object-fit: cover;
+  background: var(--medallion-bg);
+  box-shadow: 0 0 0 3px var(--medallion-ring), var(--shadow-sm);
 }
 
 /* Fallback capsule (§8) — colored candy bubble with the mascot's initial. */

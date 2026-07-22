@@ -25,8 +25,10 @@ import { MAX_CONCURRENT_TILES } from '../data/levels';
 /** Rolling window size for the control signal (§5.1). */
 export const METRICS_WINDOW = 8;
 
-/** Conservative starting intensity for a freshly-entered phase (§decision 3). */
-export const COLD_START_INTENSITY = 0.2;
+/** Near-zero starting intensity for a freshly-entered phase (§decision 3 +
+ *  age lever (b), §6): a 5-year-old's very first tiles must be as gentle as the
+ *  band allows; the adaptive climb then ramps a capable kid quickly. */
+export const COLD_START_INTENSITY = 0.1;
 
 /** Retry-after-death multiplier on the settled intensity (§decision 2). */
 export const RETRY_FACTOR = 0.7;

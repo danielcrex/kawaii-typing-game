@@ -1,0 +1,104 @@
+/*
+ * First-run starting-point pick (age lever (a), §6). One quiet candy-glass
+ * card, two big tap targets. Soft-luxe, disciplined — the boldness lives in
+ * the play scene, not here (§7.3).
+ */
+.onboard {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-6);
+}
+
+.onboard__card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4);
+  max-width: 520px;
+  padding: var(--space-8) var(--space-6);
+  text-align: center;
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  border-radius: var(--radius-lg);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0.7));
+  box-shadow: var(--shadow-lg), inset 0 1px 0 rgba(255, 255, 255, 0.95);
+}
+
+.onboard__title {
+  font-family: var(--font-display);
+  font-weight: var(--fw-semibold);
+  font-size: var(--fs-h1);
+  color: var(--tile-ink);
+  margin: 0;
+}
+.onboard__sub {
+  margin: 0;
+  color: var(--ink-muted);
+}
+
+.onboard__choices {
+  display: flex;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-top: var(--space-2);
+}
+
+.onboard__choice {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  width: 200px;
+  padding: var(--space-5) var(--space-4);
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  background: rgba(255, 255, 255, 0.7);
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+  transition: transform var(--dur-fast) var(--ease-spring), box-shadow var(--dur-fast) var(--ease-out);
+}
+.onboard__choice:hover,
+.onboard__choice:focus-visible {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-md);
+  outline: none;
+}
+.onboard__choice--primary {
+  background: linear-gradient(180deg, var(--accent-soft), var(--accent));
+  color: #fff;
+  border-color: transparent;
+  box-shadow: var(--shadow-md), var(--glow-accent);
+}
+
+.onboard__emoji {
+  font-size: 2.4rem;
+  line-height: 1;
+}
+.onboard__label {
+  font-family: var(--font-display);
+  font-weight: var(--fw-semibold);
+  font-size: var(--fs-h3, 1.15rem);
+}
+.onboard__hint {
+  font-size: 0.85rem;
+  opacity: 0.85;
+}
+
+.onboard__skip {
+  margin-top: var(--space-2);
+  background: none;
+  border: none;
+  color: var(--ink-muted);
+  font-family: var(--font-ui);
+  font-size: 0.9rem;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.onboard__skip:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .onboard__choice { transition: none; }
+  .onboard__choice:hover, .onboard__choice:focus-visible { transform: none; }
+}

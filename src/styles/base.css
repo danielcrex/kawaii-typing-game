@@ -20,16 +20,29 @@ body {
   font-size: var(--fs-body);
   line-height: var(--lh-normal);
   color: var(--tile-ink);
-  /* Dusk gradient, rotated per mascot. filter:hue-rotate keeps the whole
-     palette coherent while shifting the mood level to level. */
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/*
+ * Dusk gradient lives on a DEDICATED background layer, NOT on <body>. This is
+ * deliberate (fix #3a): `filter: hue-rotate` applied to an element tints that
+ * element AND its whole painted subtree — putting it on <body> re-hued every
+ * mascot image and tile. Isolating it to this fixed ::before means the per-mascot
+ * hue-shift touches ONLY the gradient; no element containing a mascot is ever
+ * filtered, so the animals render in their true colours.
+ */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
   background:
     radial-gradient(1200px 800px at 15% -10%, var(--bg-1), transparent 60%),
     radial-gradient(1100px 900px at 100% 0%, var(--bg-3), transparent 55%),
     linear-gradient(160deg, var(--bg-2), var(--bg-1) 45%, var(--bg-3));
-  background-attachment: fixed;
   filter: hue-rotate(var(--mascot-hue));
-  -webkit-font-smoothing: antialiased;
-  text-rendering: optimizeLegibility;
 }
 
 /* Scenes mount here; each screen is absolutely centered within the viewport. */

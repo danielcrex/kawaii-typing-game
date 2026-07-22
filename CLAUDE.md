@@ -46,6 +46,24 @@ Module-per-responsibility. The pure, DOM-free, testable core:
 spawner — step 5 swaps the static source for the adaptive one, and that must be a
 wiring change, not a refactor.
 
+## Curriculum (see PROJECT.md §6)
+Content is taught by **key progression, not word length**. The single source of
+truth is `data/curriculum.ts` (home row → top → bottom → Shift → punctuation;
+space enters with phrases at L10; all 26 letters by L13). It is consumed by the
+word sampler AND — when built — the step-6 keyboard guide; the guide MUST read
+its key order from here, never hardcode a second copy.
+
+- `data/words.ts` — one ~400-word common-word corpus (Fry/Dolch, age 5+), plus
+  phrases and punctuation items. Selection is **key-gated** (`wordsForLevel` etc.):
+  a word first appears at the first level whose unlocked keys cover its letters.
+- `data/sampler.ts` — non-repeating (recent-buffer) sampler, weighted toward the
+  level's newly-introduced keys. Emits single-letter drills on L1–2.
+- **Age 5–10 = ONE spine, three levers** (never a content fork): (a) first-run
+  starting-point pick (`ui/screens/onboarding.ts`) sets entry level — beginner L1
+  vs confident **compress-traverse** to L7; (b) widened adaptive band (Phase-A
+  `speedMin` 30 + `COLD_START_INTENSITY` 0.1 floor); (c) de-drilled early levels.
+  The adaptive engine tunes SPEED only — it never makes content age-appropriate.
+
 ## Assets
 24 mascot images in `Images/` (named `1.jpg`..`24.jpg`, verified 1:1 to level
 order). Copied to `public/Images/` so Vite serves them at `/Images/N.jpg`. A

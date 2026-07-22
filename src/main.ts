@@ -13,6 +13,8 @@ import './styles/title.css';
 
 import { SceneManager } from './ui/scenes';
 import { createTitle } from './ui/screens/title';
+import { createOnboarding } from './ui/screens/onboarding';
+import { loadOnboarding } from './storage/progress';
 
 const app = document.getElementById('app');
 if (!app) {
@@ -20,4 +22,6 @@ if (!app) {
 }
 
 const scenes = new SceneManager(app);
-scenes.go(createTitle);
+// First run → the one-tap starting-point pick (age lever (a), §6); afterwards go
+// straight to the friends grid. The pick is remembered so we never nag again.
+scenes.go(loadOnboarding()?.done ? createTitle : createOnboarding);
