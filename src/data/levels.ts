@@ -33,7 +33,10 @@ export const MAX_CONCURRENT_TILES = 5;
 export const TILE_TARGET = 20;
 
 export const PHASES: Record<PhaseId, PhaseBounds> = {
-  A: { id: 'A', speedMin: 40, speedMax: 90, spawnMin: 1.6, spawnMax: 2.6, concMin: 1, concMax: 2, content: 'single letters' },
+  // Phase A floor lowered (age lever (b), §6): a slower min fall + wider spawn
+  // gap lets a 5-year-old beginner cope at low intensity, while the unchanged
+  // max keeps a cruising 10-year-old genuinely challenged on the same level.
+  A: { id: 'A', speedMin: 30, speedMax: 90, spawnMin: 1.6, spawnMax: 2.9, concMin: 1, concMax: 2, content: 'home-row keys (single-key drills → first words)' },
   B: { id: 'B', speedMin: 55, speedMax: 110, spawnMin: 1.7, spawnMax: 2.8, concMin: 2, concMax: 3, content: '3-letter words' },
   C: { id: 'C', speedMin: 65, speedMax: 125, spawnMin: 1.8, spawnMax: 2.9, concMin: 2, concMax: 3, content: '4–5 letter words' },
   D: { id: 'D', speedMin: 75, speedMax: 140, spawnMin: 1.9, spawnMax: 3.0, concMin: 3, concMax: 4, content: '5–6 letter words' },
@@ -48,32 +51,37 @@ export interface LevelDef {
   focus: string;
 }
 
-/** The 24 levels, grouped into phases of 4. `focus` mirrors §6.2. */
+/**
+ * The 24 levels, grouped into phases of 4. `focus` now describes the KEY
+ * progression (data/curriculum.ts is the source of truth for the actual key
+ * sets; these strings are just human labels for menus/intros). Phases remain
+ * SPEED/SPAWN envelopes only — content is key-gated, not length-banded (§6).
+ */
 export const LEVELS: readonly LevelDef[] = [
-  { level: 1, phase: 'A', focus: 'home row A S D F J K L ;' },
-  { level: 2, phase: 'A', focus: 'top row Q W E R T Y' },
-  { level: 3, phase: 'A', focus: 'bottom row + common' },
-  { level: 4, phase: 'A', focus: 'all letters + punctuation' },
-  { level: 5, phase: 'B', focus: 'common 3-letter' },
-  { level: 6, phase: 'B', focus: '3-letter, home-row bias' },
-  { level: 7, phase: 'B', focus: 'mixed 3-letter' },
-  { level: 8, phase: 'B', focus: '3-letter + repeats' },
-  { level: 9, phase: 'C', focus: '4-letter' },
-  { level: 10, phase: 'C', focus: '4-letter common' },
-  { level: 11, phase: 'C', focus: '4–5 letter' },
-  { level: 12, phase: 'C', focus: '4–5 letter' },
-  { level: 13, phase: 'D', focus: '5-letter' },
-  { level: 14, phase: 'D', focus: '5-letter mixed' },
-  { level: 15, phase: 'D', focus: '5–6 letter' },
-  { level: 16, phase: 'D', focus: 'common 6-letter' },
-  { level: 17, phase: 'E', focus: '6-letter + capitals' },
-  { level: 18, phase: 'E', focus: '6–7 letter' },
-  { level: 19, phase: 'E', focus: 'mixed + simple phrases' },
-  { level: 20, phase: 'E', focus: '7–8 letter' },
-  { level: 21, phase: 'F', focus: '7–9 letter' },
-  { level: 22, phase: 'F', focus: '8+ letter' },
-  { level: 23, phase: 'F', focus: '8–10 letter, themed' },
-  { level: 24, phase: 'F', focus: 'mastery: long words + short sentences' },
+  { level: 1, phase: 'A', focus: 'home row: f j' },
+  { level: 2, phase: 'A', focus: 'home row: d k' },
+  { level: 3, phase: 'A', focus: 'home row: s l a — first words' },
+  { level: 4, phase: 'A', focus: 'home row: g h' },
+  { level: 5, phase: 'B', focus: 'top row: e i (vowels)' },
+  { level: 6, phase: 'B', focus: 'top row: r u' },
+  { level: 7, phase: 'B', focus: 'top row: t y' },
+  { level: 8, phase: 'B', focus: 'top row: w o' },
+  { level: 9, phase: 'C', focus: 'top row: q p' },
+  { level: 10, phase: 'C', focus: 'n m + space — phrases begin' },
+  { level: 11, phase: 'C', focus: 'bottom row: c b' },
+  { level: 12, phase: 'C', focus: 'bottom row: v' },
+  { level: 13, phase: 'D', focus: 'bottom row: x z — all letters' },
+  { level: 14, phase: 'D', focus: 'consolidate: longer words' },
+  { level: 15, phase: 'D', focus: 'consolidate: longer words' },
+  { level: 16, phase: 'D', focus: 'consolidate: common 6-letter' },
+  { level: 17, phase: 'E', focus: 'capitals (Shift)' },
+  { level: 18, phase: 'E', focus: 'capitals + longer words' },
+  { level: 19, phase: 'E', focus: 'phrases + longer words' },
+  { level: 20, phase: 'E', focus: 'consolidate: phrases + long words' },
+  { level: 21, phase: 'F', focus: 'punctuation: . ,' },
+  { level: 22, phase: 'F', focus: "punctuation: ' (contractions)" },
+  { level: 23, phase: 'F', focus: 'punctuation: ! ?' },
+  { level: 24, phase: 'F', focus: 'mastery: everything mixed' },
 ] as const;
 
 /** Get a level definition by 1-based number. */

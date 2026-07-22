@@ -9,7 +9,8 @@
  */
 import '../../styles/play.css';
 import { getMascot, mascotFallbackColor } from '../../data/mascots';
-import { getLevel, getPhaseForLevel, type PhaseId } from '../../data/levels';
+import { getLevel, getPhaseForLevel } from '../../data/levels';
+import { createWordSampler } from '../../data/sampler';
 import {
   createAdaptiveDifficulty,
   createStaticDifficulty,
@@ -111,11 +112,16 @@ export function createPlay(level: number, options: PlayOptions = {}): SceneFacto
         // this one line (everything downstream already reads through it).
         difficulty = createAdaptiveDifficulty(phase, startIntensity);
 
+        // Real content: the key-gated, non-repeating, new-key-weighted sampler
+        // for THIS level (data/sampler.ts). Same injected `() => string` shape
+        // the Session already consumes — a drop-in swap for the old placeholder.
+        const sampler = createWordSampler(level);
+
         session = new Session({
           level,
           field: { width: rect.width, height: rect.height },
           difficulty,
-          nextWord: makeTempWordSource(phase.id),
+          nextWord: () => sampler.next(),
           mascot: { image: mascot.image, name: mascot.name, fallbackColor: mascotFallbackColor(mascot.hue) },
           layer: field,
           onChange: (snap: SessionSnapshot) => {
@@ -164,6 +170,7 @@ export function createPlay(level: number, options: PlayOptions = {}): SceneFacto
               getPhaseForLevel,
               hearts: { initHearts, accrueRegen, loseHeart, regenFraction },
               storage: { loadPhaseIntensity, savePhaseIntensity },
+              createWordSampler,
             },
           };
         }
@@ -182,21 +189,3 @@ export function createPlay(level: number, options: PlayOptions = {}): SceneFacto
   };
 }
 
-/**
- * TEMPORARY content source (step 2 only). Returns short, phase-appropriate
- * placeholder words so we can watch tiles fall and clear. Step 8 replaces this
- * with the curated §6.3 word pools from data/words.ts — same injected shape, so
- * it's a drop-in swap.
- */
-function makeTempWordSource(phase: PhaseId): () => string {
-  const TEMP: Record<PhaseId, readonly string[]> = {
-    A: ['a', 's', 'd', 'f', 'j', 'k', 'l', 'e', 'i', 'r', 'u'],
-    B: ['cat', 'dog', 'sun', 'bee', 'sky', 'joy', 'hat', 'run'],
-    C: ['star', 'moon', 'play', 'jump', 'kite', 'frog'],
-    D: ['happy', 'sunny', 'bunny', 'cloud', 'candy', 'friend'],
-    E: ['rainbow', 'sparkle', 'flowers', 'kitten', 'blossom'],
-    F: ['sunshine', 'wonderful', 'butterfly', 'good job', 'well done'],
-  };
-  const pool = TEMP[phase];
-  return () => pool[Math.floor(Math.random() * pool.length)] ?? '?';
-}

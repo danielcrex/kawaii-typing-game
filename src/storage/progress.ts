@@ -14,10 +14,20 @@ import type { PhaseId } from '../data/levels';
 
 export const STORAGE_KEY = 'kawaii-typing-friends/v2';
 
+/** First-run starting-point pick (age lever (a), §6). */
+interface OnboardingData {
+  /** True once the player has made the one-tap starting-point choice. */
+  done: boolean;
+  /** The default entry level their choice set (still overridable via level-select). */
+  entryLevel: number;
+}
+
 interface ProgressData {
   version: 2;
   /** Settled adaptive intensity (0..1) per phase. */
   intensityByPhase: Partial<Record<PhaseId, number>>;
+  /** Optional so existing v2 saves (pre-onboarding) load without migration. */
+  onboarding?: OnboardingData;
 }
 
 function fresh(): ProgressData {
@@ -64,5 +74,19 @@ export function loadPhaseIntensity(phase: PhaseId): number | undefined {
 export function savePhaseIntensity(phase: PhaseId, intensity: number): void {
   const data = load();
   data.intensityByPhase[phase] = Math.min(1, Math.max(0, intensity));
+  save(data);
+}
+
+/** The stored starting-point pick, or undefined if the player hasn't chosen yet. */
+export function loadOnboarding(): OnboardingData | undefined {
+  const o = load().onboarding;
+  if (o && typeof o.done === 'boolean' && typeof o.entryLevel === 'number') return o;
+  return undefined;
+}
+
+/** Persist the one-tap starting-point pick (entry level clamped to a sane range). */
+export function saveOnboarding(entryLevel: number): void {
+  const data = load();
+  data.onboarding = { done: true, entryLevel: Math.min(24, Math.max(1, Math.round(entryLevel))) };
   save(data);
 }
