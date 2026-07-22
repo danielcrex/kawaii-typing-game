@@ -64,6 +64,31 @@ function note(
   osc.stop(t0 + dur + 0.02);
 }
 
+/** A short band-passed noise burst (used for firework crackle). */
+function noise(dur: number, opts: { gain?: number; delay?: number; freq?: number; q?: number } = {}): void {
+  const c = ensure();
+  if (!c || !master) return;
+  const t0 = c.currentTime + (opts.delay ?? 0);
+  const frames = Math.max(1, Math.floor(c.sampleRate * dur));
+  const buffer = c.createBuffer(1, frames, c.sampleRate);
+  const data = buffer.getChannelData(0);
+  for (let i = 0; i < frames; i++) data[i] = Math.random() * 2 - 1;
+  const src = c.createBufferSource();
+  src.buffer = buffer;
+  const bp = c.createBiquadFilter();
+  bp.type = 'bandpass';
+  bp.frequency.value = opts.freq ?? 2200;
+  bp.Q.value = opts.q ?? 0.8;
+  const g = c.createGain();
+  const peak = opts.gain ?? 0.14;
+  g.gain.setValueAtTime(0.0001, t0);
+  g.gain.exponentialRampToValueAtTime(peak, t0 + 0.008);
+  g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+  src.connect(bp).connect(g).connect(master);
+  src.start(t0);
+  src.stop(t0 + dur + 0.02);
+}
+
 /** Briefly duck the music bus so an SFX reads clearly (§9). */
 function duck(): void {
   const c = ensure();
@@ -121,13 +146,32 @@ export const Sound = {
       note(990, 0.12, { type: 'sine', gain: 0.1, delay: 0.06 });
     });
   },
-  /** Short bright fanfare on level complete. */
+  /** Short bright fanfare + celebratory fireworks on level complete (#3). */
   levelComplete(): void {
     sfx(() => {
       const arp = [523, 659, 784, 1046];
       arp.forEach((f, i) => note(f, 0.28, { type: 'triangle', gain: 0.2, delay: i * 0.09 }));
       note(1568, 0.4, { type: 'sine', gain: 0.12, delay: 0.36 });
+      this.fireworks();
     });
+  },
+  /** Celebratory firework bursts: a rising whistle then a crackle, staggered. */
+  fireworks(): void {
+    if (prefs.muted) return;
+    if (!ensure()) return;
+    const bursts = [
+      { at: 0.15, freq: 2400 },
+      { at: 0.5, freq: 1900 },
+      { at: 0.85, freq: 2800 },
+    ];
+    for (const bu of bursts) {
+      // whistle up …
+      note(500, 0.28, { type: 'sine', gain: 0.08, glideTo: 1400, delay: bu.at });
+      // … then the crackle (a few quick noise pops)
+      for (let i = 0; i < 5; i++) {
+        noise(0.07, { gain: 0.1, freq: bu.freq + i * 120, q: 1.2, delay: bu.at + 0.28 + i * 0.04 });
+      }
+    }
   },
   /** Soft, kind, non-defeating tone on game over. */
   gameOver(): void {
