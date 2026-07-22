@@ -1,22 +1,54 @@
 /*
- * Typography — three faces, three roles (PROJECT.md §7.2).
- *   Display / tiles : Fredoka (500–600) — rounded kawaii, unambiguous glyphs.
- *   UI / body       : Plus Jakarta Sans (400–600) — modern, quiet, premium.
- *   Data / instrument: JetBrains Mono — the "measuring your real progress" panel.
+ * Typography — roles split for kawaii branding vs. tile legibility (fix #4).
+ *   Display / branding : Baloo 2 (600–700) — a genuinely kawaii rounded face,
+ *                        for the logo, mascot names, big feedback ("You did it!").
+ *   Falling tiles      : Atkinson Hyperlegible (400/700) — a high-legibility face
+ *                        engineered to disambiguate I l 1 and O 0 (tile
+ *                        readability is pedagogy and must not regress).
+ *   UI / body          : quiet system sans (Plus Jakarta if present).
+ *   Data / instrument  : monospace with tabular figures.
  *
- * SELF-HOSTING (typography step): woff2 files land in /public/fonts and are
- * declared with @font-face here, subset to used glyphs, so the game stays fully
- * offline (no CDN runtime dep). Until then the stacks below fall back to
- * high-quality system rounded/sans/mono faces so the scaffold still reads well.
- *
- * Glyph disambiguation (I l 1 / O 0) is a hard requirement — verify once the
- * real Fredoka + JetBrains Mono files are in place.
+ * SELF-HOSTED, NO CDN: both faces are subset (basic latin) woff2 in
+ * /public/fonts, served locally, so the game is fully offline. There is NO
+ * @import / Google-Fonts runtime dependency anywhere.
  */
 
-/* @font-face declarations added in the typography step (self-hosted woff2). */
+/* ---- Baloo 2 — kawaii display / branding ---- */
+@font-face {
+  font-family: 'Baloo 2';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('/fonts/baloo2-600.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Baloo 2';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('/fonts/baloo2-700.woff2') format('woff2');
+}
+
+/* ---- Atkinson Hyperlegible — high-legibility falling tiles ---- */
+@font-face {
+  font-family: 'Atkinson Hyperlegible';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/atkinson-400.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Atkinson Hyperlegible';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('/fonts/atkinson-700.woff2') format('woff2');
+}
 
 :root {
-  --font-display: 'Fredoka', 'Baloo 2', 'Segoe UI Rounded', 'Nunito', system-ui, sans-serif;
+  --font-display: 'Baloo 2', 'Segoe UI Rounded', 'Nunito', system-ui, sans-serif;
+  /* The falling-tile face — legibility over cuteness (unambiguous I l 1 / O 0). */
+  --font-tile: 'Atkinson Hyperlegible', 'Segoe UI', system-ui, -apple-system, sans-serif;
   --font-ui: 'Plus Jakarta Sans', 'Segoe UI', system-ui, -apple-system, sans-serif;
   --font-mono: 'JetBrains Mono', 'Space Mono', ui-monospace, 'Cascadia Code', 'Consolas', monospace;
 

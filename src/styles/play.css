@@ -221,7 +221,9 @@
 
 .tile__word {
   position: relative;
-  font-family: var(--font-display);
+  /* High-legibility tile face — unambiguous I l 1 / O 0 (fix #4). NOT the kawaii
+     display face; tile readability is pedagogy and must not regress. */
+  font-family: var(--font-tile);
   font-weight: var(--fw-semibold);
   font-size: var(--fs-tile);
   line-height: var(--lh-tight);
