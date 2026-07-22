@@ -27,23 +27,23 @@
 }
 .kbg__row {
   display: flex;
-  gap: 5px;
+  gap: 7px;
 }
 .kbg__key {
   --tint-a: 1;
   --glow-a: 1;
   position: relative;
-  width: 30px;
-  height: 34px;
+  width: 42px;
+  height: 48px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 8px;
+  border-radius: 10px;
   background: rgba(255, 255, 255, 0.9);
   border: 1px solid rgba(0, 0, 0, 0.06);
   font-family: var(--font-tile);
   font-weight: var(--fw-semibold);
-  font-size: 0.9rem;
+  font-size: 1.15rem;
   color: var(--tile-ink);
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
 }
@@ -60,7 +60,7 @@
   opacity: calc(0.75 * var(--tint-a));
 }
 .kbg__key--space {
-  width: 150px;
+  width: 220px;
 }
 /* Home-row anchors (F / J) carry the usual bump. */
 .kbg__key--home::before {
@@ -135,47 +135,48 @@
 
 .cue__hands {
   display: flex;
-  align-items: flex-end;
-  gap: 12px;
-  padding: 8px 12px 6px;
-  border-radius: 14px;
-  background: rgba(255, 255, 255, 0.9);
-  border: 1px solid rgba(0, 0, 0, 0.06);
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 14px 8px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid rgba(0, 0, 0, 0.05);
   box-shadow: var(--shadow-md);
 }
-.cue__hand { display: flex; flex-direction: column; align-items: center; gap: 2px; }
-.cue__fingers { display: flex; gap: 3px; align-items: flex-end; height: 34px; }
-.cue__finger {
-  width: 7px;
-  border-radius: 4px 4px 2px 2px;
-  background: color-mix(in srgb, var(--ink-muted) 42%, transparent);
+.cue__handrow {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
 }
-.f-pinky { height: 17px; }
-.f-ring { height: 24px; }
-.f-mid { height: 28px; }
-.f-idx { height: 25px; }
-.f-thumb { height: 12px; width: 9px; align-self: flex-end; }
-.cue__finger.up {
-  background: var(--hl);
-  transform: translateY(-7px);
-  box-shadow: 0 0 0 2px #fff, 0 0 10px 2px var(--hl);
+.cue__handsvg {
+  width: 58px;
+  height: auto;
+  display: block;
+  overflow: visible;
 }
-.cue__palm {
-  width: 40px;
-  height: 15px;
-  border-radius: 6px 6px 10px 10px;
-  background: color-mix(in srgb, var(--ink-muted) 42%, transparent);
-  margin-top: 1px;
+/* Neutral digits + palm; the active digit is filled inline + lifts. */
+.cue__handsvg .cf,
+.cue__handsvg .cpalm {
+  fill: color-mix(in srgb, var(--ink-muted) 38%, transparent);
+  transition: transform 140ms var(--ease-spring), fill 140ms var(--ease-out);
+}
+.cue__handsvg .cf.up {
+  /* fill is set inline to the finger colour */
+  transform: translateY(-6px);
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.18));
 }
 .cue__hlabel {
   align-self: center;
   font-family: var(--font-tile);
   font-weight: var(--fw-semibold);
-  font-size: 0.7rem;
+  font-size: 0.78rem;
+  white-space: nowrap;
 }
 
 @media (prefers-reduced-motion: reduce) {
   .kbg__key--next { animation: none; }
   .cue { transition: none; }
-  .cue__finger.up { transform: none; }
+  .cue__handsvg .cf { transition: none; }
+  .cue__handsvg .cf.up { transform: none; }
 }
