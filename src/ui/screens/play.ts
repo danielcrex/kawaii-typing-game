@@ -210,8 +210,9 @@ export function createPlay(level: number, options: PlayOptions = {}): SceneFacto
         // Reserve the keyboard band so the cue never places itself under the keys.
         const safeBottom = keyboard.el.offsetHeight + 18;
 
-        // Gentle ambient music for this phase group (§9), ducked under SFX.
-        Sound.music('ABCDEF'.indexOf(phase.id));
+        // Set the phase group for the PERSISTENT music (§9) — it keeps playing
+        // across scenes; this only retunes, never restarts.
+        Sound.setPhase('ABCDEF'.indexOf(phase.id));
 
         // Real typing: route keystrokes into the session (no submit key). The
         // per-keystroke tick is very subtle and OFF by default (§9).
@@ -300,7 +301,7 @@ export function createPlay(level: number, options: PlayOptions = {}): SceneFacto
       unmount() {
         detachKeys?.();
         loop?.stop();
-        Sound.stopMusic();
+        // NOTE: music is NOT stopped here — it persists across scenes (§9).
         keyboard.destroy();
         tileCue.destroy();
         session?.dispose();

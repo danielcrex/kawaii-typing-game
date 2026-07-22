@@ -17,10 +17,22 @@ let ctx: AudioContext | null = null;
 let master: GainNode | null = null;
 let musicBus: GainNode | null = null;
 let musicNodes: { osc: OscillatorNode; gain: GainNode }[] = [];
+let musicStarted = false;
+let musicPhase = 0;
+let musicAudio: HTMLAudioElement | null = null;
 let prefs: AudioPrefs = loadAudioPrefs();
 
 /** Base music-bus level (kept low; ducking dips below it). */
 const MUSIC_LEVEL = 0.06;
+
+/**
+ * Real music track (§9). When set to a URL of a CC0/royalty-free kawaii/chiptune
+ * LOOP (e.g. '/music/theme.mp3' placed in public/), the persistent player plays
+ * it on loop through the music bus (ducking + volume apply) INSTEAD of the synth
+ * pad below. Left null until a track is chosen — synthesis is right for SFX but
+ * wrong for music, so the pad is only a placeholder.
+ */
+const MUSIC_TRACK: string | null = null;
 
 /** Lazily create the audio graph on first use (post user-gesture). */
 function ensure(): AudioContext | null {
@@ -109,6 +121,40 @@ function sfx(fn: () => void): void {
   fn();
 }
 
+/** The synth-pad chord for a phase group (placeholder music until a real track). */
+function phaseChord(phaseIndex: number): number[] {
+  const root = 130.81 * Math.pow(2, (phaseIndex % 6) / 12); // C3, up a little per phase
+  return [root, root * 1.25, root * 1.5, root * 2.25]; // soft major-ninth
+}
+
+/** Build the ambient pad oscillators for a phase into `nodes`. */
+function buildPad(
+  phaseIndex: number,
+  c: AudioContext,
+  bus: GainNode,
+  nodes: { osc: OscillatorNode; gain: GainNode }[],
+): void {
+  for (const f of phaseChord(phaseIndex)) {
+    const osc = c.createOscillator();
+    const g = c.createGain();
+    osc.type = 'sine';
+    osc.frequency.value = f * (1 + (Math.random() - 0.5) * 0.004); // faint detune for warmth
+    g.gain.value = 0.25;
+    osc.connect(g).connect(bus);
+    osc.start();
+    nodes.push({ osc, gain: g });
+  }
+}
+
+/** Retune the running pad to a new phase chord — a smooth glide, no restart. */
+function tunePad(phaseIndex: number, c: AudioContext, nodes: { osc: OscillatorNode; gain: GainNode }[]): void {
+  const chord = phaseChord(phaseIndex);
+  nodes.forEach((n, i) => {
+    const f = chord[i];
+    if (f) n.osc.frequency.linearRampToValueAtTime(f, c.currentTime + 1.2);
+  });
+}
+
 // ---------- The §9 sound set ----------
 export const Sound = {
   /** Satisfying pop on a correct tile clear — a bright pluck + a sparkle tail. */
@@ -184,27 +230,59 @@ export const Sound = {
     sfx(() => note(880, 0.03, { type: 'sine', gain: 0.07 }));
   },
 
-  // ---------- Music (gentle ambient pad, ducked under SFX) ----------
-  /** Start/refresh the pad for a phase group (0-based), transposing the chord. */
-  music(phaseIndex: number): void {
+  // ---------- Music (PERSISTENT across scenes; lives above the scene manager) ----------
+
+  /**
+   * Resume audio + start music on the FIRST user gesture (main.ts wires this to
+   * a one-time pointer/key listener). AudioContexts start suspended until a
+   * gesture, so this is when the persistent music actually begins.
+   */
+  unlock(): void {
     const c = ensure();
-    if (!c || !musicBus) return;
-    this.stopMusic();
-    if (!prefs.music) return;
-    // A soft major-ninth pad; root rises a little per phase group.
-    const root = 130.81 * Math.pow(2, (phaseIndex % 6) / 12); // C3 up by phase
-    const chord = [root, root * 1.25, root * 1.5, root * 2.25];
-    for (const f of chord) {
-      const osc = c.createOscillator();
-      const g = c.createGain();
-      osc.type = 'sine';
-      osc.frequency.value = f * (1 + (Math.random() - 0.5) * 0.004); // faint detune for warmth
-      g.gain.value = 0.25;
-      osc.connect(g).connect(musicBus);
-      osc.start();
-      musicNodes.push({ osc, gain: g });
+    if (!c) return;
+    if (c.state === 'suspended') void c.resume();
+    this.startMusic();
+  },
+
+  /**
+   * Start the persistent music ONCE and keep it playing across every scene
+   * (title → select → intro → play → complete). Scenes never stop it; they only
+   * call setPhase(). No-op if already started or music is off.
+   */
+  startMusic(): void {
+    const c = ensure();
+    if (!c || !musicBus || !prefs.music || musicStarted) return;
+    musicStarted = true;
+    if (MUSIC_TRACK) {
+      // Real loop routed through the music bus (ducking + volume apply).
+      musicAudio = new Audio(MUSIC_TRACK);
+      musicAudio.loop = true;
+      try {
+        c.createMediaElementSource(musicAudio).connect(musicBus);
+      } catch {
+        /* already connected / unsupported */
+      }
+      void musicAudio.play().catch(() => {});
+    } else {
+      buildPad(musicPhase, c, musicBus, musicNodes);
     }
   },
+
+  /**
+   * Set the phase group (0-based) WITHOUT restarting the music — the pad retunes
+   * smoothly; a single real track just keeps looping. Starts the music if a
+   * gesture already happened but it hasn't begun.
+   */
+  setPhase(phaseIndex: number): void {
+    musicPhase = phaseIndex;
+    if (!musicStarted) {
+      this.startMusic();
+      return;
+    }
+    if (!MUSIC_TRACK && ctx) tunePad(phaseIndex, ctx, musicNodes);
+  },
+
+  /** Stop the music entirely (only on a music-off toggle). */
   stopMusic(): void {
     for (const n of musicNodes) {
       try {
@@ -214,6 +292,11 @@ export const Sound = {
       }
     }
     musicNodes = [];
+    if (musicAudio) {
+      musicAudio.pause();
+      musicAudio = null;
+    }
+    musicStarted = false;
   },
 
   // ---------- Settings ----------
@@ -243,7 +326,8 @@ export const Sound = {
     prefs = { ...prefs, music: on };
     saveAudioPrefs(prefs);
     if (musicBus && ctx) musicBus.gain.setTargetAtTime(on ? MUSIC_LEVEL : 0, ctx.currentTime, 0.05);
-    if (!on) this.stopMusic();
+    if (on) this.startMusic();
+    else this.stopMusic();
   },
   setKeyClicks(on: boolean): void {
     prefs = { ...prefs, keyClicks: on };
