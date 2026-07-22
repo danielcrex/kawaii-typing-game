@@ -93,6 +93,17 @@ export function createLevelComplete(level: number, result: LevelResult): SceneFa
       actions.appendChild(next);
     }
 
+    // Replay the same level (mirrors game-over's "Try again?").
+    const replay = document.createElement('button');
+    replay.className = 'endcard__btn';
+    replay.type = 'button';
+    replay.textContent = '↻ Play again';
+    replay.addEventListener('click', () => {
+      Sound.menuTap();
+      nav.go(createPlay(level));
+    });
+    actions.appendChild(replay);
+
     // Link back to the main/friends page.
     const home = document.createElement('button');
     home.className = `endcard__btn${isFinal ? ' endcard__btn--primary' : ''}`;
