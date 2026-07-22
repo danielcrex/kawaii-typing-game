@@ -22,6 +22,7 @@ import { saveOnboarding } from '../../storage/progress';
 import type { Scene, SceneFactory, SceneNavigator } from '../scenes';
 import { createTitle } from './title';
 import { createPlay } from './play';
+import { createWarmup } from './warmup';
 
 export const createOnboarding: SceneFactory = (nav: SceneNavigator): Scene => {
   const root = document.createElement('section');
@@ -47,17 +48,21 @@ export const createOnboarding: SceneFactory = (nav: SceneNavigator): Scene => {
   `;
 
   /** Record the pick, then go where the choice points. */
-  const choose = (entryLevel: number, then: 'play' | 'title'): void => {
+  const choose = (entryLevel: number, then: 'play' | 'title' | 'warmup'): void => {
     saveOnboarding(entryLevel);
-    if (then === 'play') nav.go(createPlay(entryLevel));
+    if (then === 'warmup') nav.go(createWarmup(entryLevel));
+    else if (then === 'play') nav.go(createPlay(entryLevel));
     else nav.go(createTitle);
   };
 
+  // Beginner starts at L1 (its own gentle home-row drills teach fingering).
   root.querySelector('[data-choice="beginner"]')!.addEventListener('click', () =>
     choose(BEGINNER_ENTRY_LEVEL, 'play'),
   );
+  // Confident compress-traverses to L7 — but FIRST a home-row finger warm-up, so
+  // the on-ramp never assumes fingering step 6 hasn't taught yet.
   root.querySelector('[data-choice="confident"]')!.addEventListener('click', () =>
-    choose(CONFIDENT_ENTRY_LEVEL, 'play'),
+    choose(CONFIDENT_ENTRY_LEVEL, 'warmup'),
   );
   // "Browse" still counts as onboarded (so we don't nag), defaulting entry to L1.
   root.querySelector('[data-choice="browse"]')!.addEventListener('click', () =>

@@ -1,0 +1,139 @@
+/*
+ * Home-row finger warm-up (confident on-ramp). Same candy-glass card language as
+ * onboarding; the one bold element is the glowing target keycap in its finger's
+ * colour. Reduced-motion drops the pulse/nudge.
+ */
+.warmup {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-6);
+}
+
+.warmup__card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4);
+  max-width: 560px;
+  padding: var(--space-8) var(--space-6);
+  text-align: center;
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  border-radius: var(--radius-lg);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0.7));
+  box-shadow: var(--shadow-lg), inset 0 1px 0 rgba(255, 255, 255, 0.95);
+}
+
+.warmup__title {
+  font-family: var(--font-display);
+  font-weight: var(--fw-semibold);
+  font-size: var(--fs-h1);
+  color: var(--tile-ink);
+  margin: 0;
+}
+.warmup__sub {
+  margin: 0;
+  color: var(--ink-muted);
+  max-width: 42ch;
+}
+
+.warmup__keys {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-top: var(--space-2);
+}
+
+.warmup__key {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  height: 52px;
+  border-radius: var(--radius-sm, 10px);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  background: rgba(255, 255, 255, 0.85);
+  box-shadow: var(--shadow-sm), inset 0 -2px 0 rgba(0, 0, 0, 0.06);
+  font-family: var(--font-tile, var(--font-display));
+  font-weight: var(--fw-semibold);
+  font-size: 1.3rem;
+  color: var(--tile-ink);
+  transition: transform var(--dur-fast) var(--ease-out), box-shadow var(--dur-fast) var(--ease-out);
+}
+
+/* The active target: glow in its finger's colour (--glow set inline). */
+.warmup__key.is-target {
+  border-color: var(--glow);
+  color: var(--glow);
+  box-shadow: 0 0 0 2px var(--glow), 0 0 16px 2px color-mix(in srgb, var(--glow) 55%, transparent);
+  animation: warmup-pulse 1.1s var(--ease-out) infinite;
+}
+.warmup__key.is-hit {
+  transform: translateY(2px);
+}
+.warmup__key--nudge {
+  animation: warmup-nudge 0.32s var(--ease-out);
+}
+
+.warmup__cue {
+  margin: 0;
+  min-height: 1.6em;
+  color: var(--ink-muted);
+  font-size: var(--fs-body);
+}
+.warmup__chip {
+  display: inline-block;
+  width: 0.8em;
+  height: 0.8em;
+  border-radius: 50%;
+  vertical-align: middle;
+  margin-left: 0.15em;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.08);
+}
+
+.warmup__progress {
+  display: flex;
+  gap: var(--space-2);
+}
+.warmup__dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--ink-muted);
+  opacity: 0.25;
+  transition: opacity var(--dur-fast) var(--ease-out), background var(--dur-fast) var(--ease-out);
+}
+.warmup__dot.is-done {
+  opacity: 1;
+  background: var(--success);
+}
+
+.warmup__skip {
+  margin-top: var(--space-2);
+  background: none;
+  border: none;
+  color: var(--ink-muted);
+  font-family: var(--font-ui);
+  font-size: 0.9rem;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.warmup__skip:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+@keyframes warmup-pulse {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+@keyframes warmup-nudge {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-4px); }
+  75% { transform: translateX(4px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .warmup__key.is-target { animation: none; }
+  .warmup__key--nudge { animation: none; }
+  .warmup__key { transition: none; }
+}
