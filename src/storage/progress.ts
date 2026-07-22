@@ -30,6 +30,19 @@ interface ProgressData {
   onboarding?: OnboardingData;
   /** Keyboard-guide toggle (§5.4). Undefined → default on. */
   guideOn?: boolean;
+  /** Audio prefs (§9). Undefined → sensible defaults. */
+  audio?: AudioPrefs;
+}
+
+/** Audio preferences (§9). */
+export interface AudioPrefs {
+  muted: boolean;
+  /** Master volume 0..1. */
+  volume: number;
+  /** Gentle ambient music on. */
+  music: boolean;
+  /** Very-subtle per-keystroke tick — OFF by default (grating on repeat). */
+  keyClicks: boolean;
 }
 
 function fresh(): ProgressData {
@@ -103,5 +116,26 @@ export function loadGuideOn(): boolean {
 export function saveGuideOn(on: boolean): void {
   const data = load();
   data.guideOn = on;
+  save(data);
+}
+
+const DEFAULT_AUDIO: AudioPrefs = { muted: false, volume: 0.7, music: true, keyClicks: false };
+
+/** Load audio prefs, defended field-by-field so partial/old data is safe (§9). */
+export function loadAudioPrefs(): AudioPrefs {
+  const a = load().audio;
+  if (!a || typeof a !== 'object') return { ...DEFAULT_AUDIO };
+  return {
+    muted: typeof a.muted === 'boolean' ? a.muted : DEFAULT_AUDIO.muted,
+    volume: typeof a.volume === 'number' && a.volume >= 0 && a.volume <= 1 ? a.volume : DEFAULT_AUDIO.volume,
+    music: typeof a.music === 'boolean' ? a.music : DEFAULT_AUDIO.music,
+    keyClicks: typeof a.keyClicks === 'boolean' ? a.keyClicks : DEFAULT_AUDIO.keyClicks,
+  };
+}
+
+/** Persist audio prefs. */
+export function saveAudioPrefs(prefs: AudioPrefs): void {
+  const data = load();
+  data.audio = prefs;
   save(data);
 }

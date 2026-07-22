@@ -142,8 +142,8 @@ export class Session {
    * this is the denominator step 5's adaptive controller reads, so it must be
    * exactly right.
    */
-  handleKey(char: string): void {
-    if (this.state !== 'playing') return;
+  handleKey(char: string): boolean {
+    if (this.state !== 'playing') return false;
 
     const outcome = this.matcher.feed(char, this.matchSnapshot());
 
@@ -182,6 +182,7 @@ export class Session {
     }
 
     this.emit();
+    return outcome.correct; // lets the caller play the soft wrong-key tick (§9)
   }
 
   /**

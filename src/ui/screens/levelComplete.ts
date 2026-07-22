@@ -14,6 +14,7 @@
  * next friend, so we celebrate mastery and offer only the friends link.
  */
 import '../../styles/endcard.css';
+import { Sound } from '../../audio/sound';
 import { getMascot, mascotFallbackColor, MASCOTS } from '../../data/mascots';
 import type { Scene, SceneFactory, SceneNavigator } from '../scenes';
 import { createPlay } from './play';
@@ -85,7 +86,10 @@ export function createLevelComplete(level: number, result: LevelResult): SceneFa
       next.type = 'button';
       const nextMascot = getMascot(level + 1);
       next.textContent = nextMascot ? `Next friend: ${nextMascot.name} →` : 'Next friend →';
-      next.addEventListener('click', () => nav.go(createPlay(level + 1)));
+      next.addEventListener('click', () => {
+        Sound.menuTap();
+        nav.go(createPlay(level + 1));
+      });
       actions.appendChild(next);
     }
 
@@ -94,11 +98,14 @@ export function createLevelComplete(level: number, result: LevelResult): SceneFa
     home.className = `endcard__btn${isFinal ? ' endcard__btn--primary' : ''}`;
     home.type = 'button';
     home.textContent = '← Friends';
-    home.addEventListener('click', () => nav.go(createTitle));
+    home.addEventListener('click', () => {
+      Sound.menuTap();
+      nav.go(createTitle);
+    });
     actions.appendChild(home);
 
     card.appendChild(actions);
 
-    return { id: `levelcomplete-${level}`, root };
+    return { id: `levelcomplete-${level}`, root, mounted() { Sound.levelComplete(); } };
   };
 }
