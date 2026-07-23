@@ -17,10 +17,22 @@ import { createTitle } from './ui/screens/title';
 import { createOnboarding } from './ui/screens/onboarding';
 import { createMobileGate, needsKeyboardGate } from './ui/screens/mobileGate';
 import { USE_CUTOUTS } from './data/mascots';
+import { Sound } from './audio/sound';
 import { loadOnboarding } from './storage/progress';
 
 // Mascot display mode (fix #2): full-image cutouts vs the circular medallion.
 document.documentElement.classList.toggle('cutouts', USE_CUTOUTS);
+
+// Persistent music (§9) lives ABOVE the scene manager: it starts on the first
+// user gesture (autoplay policy) and then plays continuously across every scene;
+// scenes only call Sound.setPhase(). One-time unlock listener:
+const unlockAudio = (): void => {
+  Sound.unlock();
+  window.removeEventListener('pointerdown', unlockAudio);
+  window.removeEventListener('keydown', unlockAudio);
+};
+window.addEventListener('pointerdown', unlockAudio);
+window.addEventListener('keydown', unlockAudio);
 
 const app = document.getElementById('app');
 if (!app) {

@@ -8,6 +8,7 @@
  */
 import '../../styles/settings.css';
 import { Sound } from '../../audio/sound';
+import { loadHandCueOn, saveHandCueOn } from '../../storage/progress';
 import { MASCOTS } from '../../data/mascots';
 import { createOnboarding } from './onboarding';
 import { createPlay } from './play';
@@ -42,6 +43,14 @@ export function openSettings(nav: SceneNavigator): void {
         <label class="settings__row">
           <span>Key clicks <em>(subtle)</em></span>
           <input type="checkbox" data-keys ${Sound.keyClicksOn() ? 'checked' : ''} />
+        </label>
+      </section>
+
+      <section class="settings__group" aria-label="Guide">
+        <h3 class="settings__h">Keyboard guide</h3>
+        <label class="settings__row">
+          <span>Show hand cue <em>(on the tile)</em></span>
+          <input type="checkbox" data-hand ${loadHandCueOn() ? 'checked' : ''} />
         </label>
       </section>
 
@@ -82,6 +91,13 @@ export function openSettings(nav: SceneNavigator): void {
     Sound.menuTap();
   });
   keys.addEventListener('change', () => Sound.setKeyClicks(keys.checked));
+
+  // Hand-cue toggle (fix #5) — keyboard finger-glow is unaffected.
+  const hand = backdrop.querySelector<HTMLInputElement>('[data-hand]')!;
+  hand.addEventListener('change', () => {
+    saveHandCueOn(hand.checked);
+    Sound.menuTap();
+  });
 
   // The start-point / level section (fix #5) mounts into this slot.
   fillStartSection(backdrop.querySelector<HTMLDivElement>('[data-slot]')!, nav, close);
